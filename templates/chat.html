@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Чат с FastAPI Assistant</title>
+    <style>
+        body { background: #23272f; color: #f3f3f3; font-family: Arial,sans-serif; margin:0;}
+        .main-block { background: #2c313cdd; border-radius:18px; margin:40px auto; max-width:600px; padding:30px; box-shadow:0 8px 32px #0008;}
+        h1 { margin-top:0; font-size:2.1rem; color: #f56b35;}
+        .chat-msg { margin-bottom:12px;}
+        .chat-msg.user { color:#f3c063;}
+        .chat-msg.ai { color:#60ff96;}
+    </style>
+</head>
+<body>
+<div class="main-block">
+    <h1>Чат с FastAPI Assistant</h1>
+    <form method="post" action="/chat">
+        <input type="text" name="user_message" placeholder="Введите сообщение..." autocomplete="off" required style="width:74%;">
+        <button type="submit">Отправить</button>
+    </form>
+    <div style="margin-top:18px;">
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="chat-msg user"><b>Ты:</b> {{ msg.user }}</div>
+                <div class="chat-msg ai"><b>AI:</b> {{ msg.ai }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <form method="get" action="/">
+        <button type="submit" style="margin-top:22px;">На главную</button>
+    </form>
+</div>
+</body>
+</html>

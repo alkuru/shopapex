@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Расширенный поиск - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.search-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.search-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.search-filters {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.api-results {
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.supplier-result {
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #4caf50;
+}
+
+.supplier-result.error {
+    border-left-color: #f44336;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.product-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+}
+
+.search-stats {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-search me-2"></i>
+                    Расширенный поиск товаров
+                </h1>
+                
+                <div class="search-form">
+                    <form method="get" id="advancedSearchForm">
+                        <div class="row">
+                            <!-- Основной поиск -->
+                            <div class="col-lg-8 mb-3">
+                                {{ form.query.label_tag }}
+                                {{ form.query }}
+                            </div>
+                            <div class="col-lg-4 mb-3">
+                                {{ form.search_type.label_tag }}
+                                {{ form.search_type }}
+                            </div>
+                            
+                            <!-- Фильтры -->
+                            <div class="col-lg-3 mb-3">
+                                {{ form.category.label_tag }}
+                                {{ form.category }}
+                            </div>
+                            <div class="col-lg-3 mb-3">
+                                {{ form.brand.label_tag }}
+                                {{ form.brand }}
+                            </div>
+                            <div class="col-lg-3 mb-3">
+                                {{ form.supplier.label_tag }}
+                                {{ form.supplier }}
+                            </div>
+                            <div class="col-lg-3 mb-3">
+                                {{ form.order_by.label_tag }}
+                                {{ form.order_by }}
+                            </div>
+                            
+                            <!-- Цена -->
+                            <div class="col-lg-3 mb-3">
+                                {{ form.price_min.label_tag }}
+                                {{ form.price_min }}
+                            </div>
+                            <div class="col-lg-3 mb-3">
+                                {{ form.price_max.label_tag }}
+                                {{ form.price_max }}
+                            </div>
+                            
+                            <!-- Чекбоксы -->
+                            <div class="col-lg-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.in_stock_only }}
+                                    {{ form.in_stock_only.label_tag }}
+                                </div>
+                                <div class="form-check">
+                                    {{ form.featured_only }}
+                                    {{ form.featured_only.label_tag }}
+                                </div>
+                                <div class="form-check">
+                                    {{ form.use_supplier_api }}
+                                    {{ form.use_supplier_api.label_tag }}
+                                </div>
+                            </div>
+                            
+                            <!-- Кнопки -->
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-primary btn-lg me-3">
+                                    <i class="fas fa-search me-2"></i>
+                                    Найти товары
+                                </button>
+                                <a href="{% url 'catalog:advanced_search' %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-redo me-2"></i>
+                                    Сбросить
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    {% if form.is_bound %}
+        <!-- Статистика поиска -->
+        <div class="search-stats">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Найдено в базе:</strong> {{ total_local }} товаров
+                </div>
+                <div class="col-md-4">
+                    <strong>Найдено через API:</strong> {{ total_api }} товаров
+                </div>
+                <div class="col-md-4">
+                    <strong>Всего результатов:</strong> {{ total_local|add:total_api }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Результаты API поиска -->
+        {% if api_results %}
+        <div class="api-results">
+            <h3><i class="fas fa-cloud me-2"></i>Результаты поиска через API поставщиков</h3>
+            
+            {% for result in api_results %}
+            <div class="supplier-result {% if not result.products %}error{% endif %}">
+                <h5>{{ result.supplier.name }}</h5>
+                {% if result.products %}
+                    <p class="text-success mb-2">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Найдено {{ result.count }} товаров
+                    </p>
+                    <div class="row">
+                        {% for product in result.products|slice:":3" %}
+                        <div class="col-md-4">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ product.brand|default:"Неизвестный бренд" }}</h6>
+                                    <p class="card-text small">{{ product.name|default:"Без названия" }}</p>
+                                    {% if product.price %}
+                                    <p class="card-text">
+                                        <strong>{{ product.price }} ₽</strong>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if result.count > 3 %}
+                    <p class="text-muted mt-2">
+                        <i class="fas fa-ellipsis-h me-1"></i>
+                        И еще {{ result.count|add:"-3" }} товаров...
+                    </p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Товары не найдены
+                    </p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Результаты из базы -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Товары из базы данных</h3>
+            {% if products %}
+            <span class="badge bg-primary">{{ total_local }} найдено</span>
+            {% endif %}
+        </div>
+        
+        {% if products %}
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    {% if product.in_stock %}
+                    <span class="badge bg-success">В наличии</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Нет в наличии</span>
+                    {% endif %}
+                </div>
+                
+                <p class="text-muted mb-2">
+                    <strong>Артикул:</strong> {{ product.article }}<br>
+                    <strong>Бренд:</strong> {{ product.brand.name }}<br>
+                    <strong>Категория:</strong> {{ product.category.name }}
+                </p>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="h5 text-primary">{{ product.final_price }} ₽</span>
+                        {% if product.discount_price %}
+                        <small class="text-muted text-decoration-line-through">{{ product.price }} ₽</small>
+                        {% endif %}
+                    </div>
+                    <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary btn-sm">
+                        Подробнее
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Пагинация -->
+        {% if is_paginated %}
+        <nav aria-label="Навигация по страницам" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page=1">Первая</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Следующая</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.paginator.num_pages }}">Последняя</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h4>Товары не найдены</h4>
+            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h4>Введите параметры поиска</h4>
+        <p class="text-muted">Используйте форму выше для поиска товаров</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическая отправка формы при изменении фильтров
+    const form = document.getElementById('advancedSearchForm');
+    const filterFields = ['category', 'brand', 'supplier', 'order_by'];
+    
+    filterFields.forEach(fieldName => {
+        const field = form.querySelector(`[name="${fieldName}"]`);
+        if (field) {
+            field.addEventListener('change', function() {
+                if (form.querySelector('[name="query"]').value.trim()) {
+                    form.submit();
+                }
+            });
+        }
+    });
+    
+    // Валидация цен
+    const priceMin = form.querySelector('[name="price_min"]');
+    const priceMax = form.querySelector('[name="price_max"]');
+    
+    function validatePrices() {
+        const min = parseFloat(priceMin.value) || 0;
+        const max = parseFloat(priceMax.value) || Infinity;
+        
+        if (min > max && max !== Infinity) {
+            priceMax.setCustomValidity('Максимальная цена должна быть больше минимальной');
+        } else {
+            priceMax.setCustomValidity('');
+        }
+    }
+    
+    if (priceMin && priceMax) {
+        priceMin.addEventListener('input', validatePrices);
+        priceMax.addEventListener('input', validatePrices);
+    }
+});
+</script>
+{% endblock %}

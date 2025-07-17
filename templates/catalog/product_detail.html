@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:home' %}">Каталог</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:category_detail' category.id %}">{{ category.name }}</a></li>
+                    <li class="breadcrumb-item active">{{ product.name|truncatechars:30 }}</li>
+                </ol>
+            </nav>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                        <i class="fas fa-image fa-5x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h1>{{ product.name }}</h1>
+                    <p class="text-muted mb-3">Бренд: <strong>{{ product.brand.name }}</strong></p>
+                    <p class="text-muted mb-3">Артикул: <strong>{{ product.article }}</strong></p>
+                    <p class="text-muted mb-3">Категория: <strong>{{ product.category.name }}</strong></p>
+                    
+                    {% if product.oem_numbers.exists %}
+                    <div class="mb-3">
+                        <h6>OEM номера:</h6>
+                        {% for product_oem in product.oem_numbers.all %}
+                            <span class="badge bg-info me-1">{{ product_oem.oem_number.number }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-4">
+                        <h3 class="text-primary">{{ product.price }} ₽</h3>
+                        {% if product.stock_quantity > 0 %}
+                            <span class="badge bg-success">В наличии ({{ product.stock_quantity }} шт.)</span>
+                        {% else %}
+                            <span class="badge bg-warning">Под заказ</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if product.description %}
+                    <div class="mb-4">
+                        <h5>Описание</h5>
+                        <p>{{ product.description|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- OEM аналоги -->
+                    {% if oem_analogs %}
+                    <div class="mb-4">
+                        <h5>Аналоги по OEM номеру</h5>
+                        <div class="row">
+                            {% for analog in oem_analogs %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title">{{ analog.name|truncatechars:40 }}</h6>
+                                        <p class="text-muted small mb-1">{{ analog.brand.name }}</p>
+                                        <p class="text-muted small mb-1">Артикул: {{ analog.article }}</p>
+                                        <p class="mb-2"><strong>{{ analog.price }} ₽</strong></p>
+                                        <a href="{% url 'catalog_web:product_detail' analog.id %}" class="btn btn-sm btn-outline-primary">
+                                            Смотреть
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <button class="btn btn-primary btn-lg me-md-2" onclick="addToCart({{ product.id }})">
+                            <i class="fas fa-cart-plus"></i> Добавить в корзину
+                        </button>
+                        <button class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-heart"></i> В избранное
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Доставка и оплата:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-truck text-primary"></i> Доставка по Москве от 300 ₽</li>
+                            <li><i class="fas fa-credit-card text-primary"></i> Оплата наличными или картой</li>
+                            <li><i class="fas fa-shield-alt text-primary"></i> Гарантия качества</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Похожие товары -->
+            {% if related_products %}
+            <div class="row mt-5">
+                <div class="col-12">
+                    <h3>Похожие товары</h3>
+                    <div class="row">
+                        {% for related in related_products %}
+                        <div class="col-md-2 mb-3">
+                            <div class="card h-100">
+                                {% if related.image %}
+                                <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}" style="height: 120px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body p-2">
+                                    <h6 class="card-title small">{{ related.name|truncatechars:30 }}</h6>
+                                    <p class="card-text small">
+                                        <strong>{{ related.price }} ₽</strong>
+                                    </p>
+                                    <a href="{% url 'catalog_web:product_detail' related.id %}" class="btn btn-sm btn-outline-primary w-100">
+                                        Смотреть
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addToCart(productId) {
+    // Заглушка для добавления в корзину
+    alert('Товар добавлен в корзину! (ID: ' + productId + ')');
+    // Здесь будет AJAX запрос к API для добавления товара в корзину
+}
+</script>
+{% endblock %}

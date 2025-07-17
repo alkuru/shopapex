@@ -1,0 +1,89 @@
+C:\Users\Professional\Desktop\shopapex\templates\vin_search
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item active">Поиск по VIN</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">{{ page_title }}</h1>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Введите VIN код автомобиля</h5>
+                            <p class="card-text text-muted">
+                                VIN код содержит 17 символов и указан в техпаспорте автомобиля или на специальной табличке под капотом.
+                            </p>
+                            
+                            <form method="get" action="{% url 'vin_search_web:search' %}">>
+                                <div class="mb-3">
+                                    <input type="text" 
+                                           name="vin" 
+                                           class="form-control form-control-lg" 
+                                           placeholder="Введите VIN код (17 символов)" 
+                                           maxlength="17"
+                                           pattern="[A-HJ-NPR-Z0-9]{17}"
+                                           title="VIN код должен содержать 17 символов (латинские буквы и цифры, кроме I, O, Q)"
+                                           value="{{ request.GET.vin }}"
+                                           required>
+                                    <div class="form-text">
+                                        Пример: WVWZZZ1JZXW386752
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search"></i> Найти запчасти
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-car fa-3x text-primary mb-3"></i>
+                                    <h6>Точный подбор</h6>
+                                    <p class="small text-muted">
+                                        Подбираем запчасти именно для вашего автомобиля
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                                    <h6>Быстро</h6>
+                                    <p class="small text-muted">
+                                        Результат поиска в течение нескольких секунд
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'vin_search_web:my_requests' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-history"></i> Мои запросы
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

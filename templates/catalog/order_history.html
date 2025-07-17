@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}История заказов{% endblock %}
+{% block content %}
+<div class="container my-4">
+    <h1>История заказов Автоконтинент</h1>
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+        </div>
+        <div class="col-auto">
+            <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Показать</button>
+        </div>
+    </form>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if orders and orders|length > 0 %}
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>№ заказа</th>
+                    <th>Дата</th>
+                    <th>Статус</th>
+                    <th>Артикул</th>
+                    <th>Наименование</th>
+                    <th>Бренд</th>
+                    <th>Склад</th>
+                    <th>Цена</th>
+                    <th>Кол-во</th>
+                    <th>Сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in orders %}
+                <tr>
+                    <td>{{ item.order_id }}</td>
+                    <td>{{ item.dt_created }}</td>
+                    <td>{{ item.state }}</td>
+                    <td>{{ item.part_code }}</td>
+                    <td>{{ item.part_name }}</td>
+                    <td>{{ item.brand_name }}</td>
+                    <td>{{ item.warehouse_name }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.price|floatformat:2|add:item.quantity|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">Заказы не найдены за выбранный период.</div>
+    {% endif %}
+</div>
+{% endblock %}

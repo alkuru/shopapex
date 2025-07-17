@@ -1,0 +1,156 @@
+/* Стили для админки поставщиков */
+
+.api-credentials-widget {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    margin-bottom: 10px;
+}
+
+.api-credentials-widget .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.password-field-wrapper {
+    position: relative;
+}
+
+.toggle-password {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 3px;
+}
+
+.toggle-password:hover {
+    background-color: #e9ecef;
+}
+
+/* Группировка полей API */
+.api-fields-group {
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+.api-fields-group h3 {
+    color: #007bff;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Кнопки действий в админке */
+.supplier-actions {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.supplier-actions h3 {
+    color: #495057;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.action-button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+    min-width: 120px;
+}
+
+.action-button.test-api {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.action-button.sync-products {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.action-button.sync-entities {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.action-button.full-sync {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Статусы и индикаторы */
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.active {
+    background-color: #28a745;
+}
+
+.status-indicator.inactive {
+    background-color: #dc3545;
+}
+
+.status-indicator.warning {
+    background-color: #ffc107;
+}
+
+/* Информационные блоки */
+.info-block {
+    background-color: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.info-block.warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.info-block.error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.info-block.success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .api-credentials-widget .row {
+        flex-direction: column;
+    }
+    
+    .api-credentials-widget .col-md-6 {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .action-button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}

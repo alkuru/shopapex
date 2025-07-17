@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item active">Контакты</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">{{ page_title }}</h1>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    {% if contact_block %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ contact_block.title }}</h5>
+                                <div class="contact-content">
+                                    {{ contact_block.html_content|safe }}
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Наши контакты</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-map-marker-alt text-primary"></i> Адрес</h6>
+                                        <p>г. Москва, ул. Примерная, д. 123<br>
+                                        Офис 456</p>
+                                        
+                                        <h6><i class="fas fa-phone text-primary"></i> Телефоны</h6>
+                                        <p>
+                                            +7 (495) 123-45-67<br>
+                                            +7 (499) 987-65-43
+                                        </p>
+                                        
+                                        <h6><i class="fas fa-envelope text-primary"></i> Email</h6>
+                                        <p>info@shopapex.ru<br>
+                                        sales@shopapex.ru</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-clock text-primary"></i> Режим работы</h6>
+                                        <p>
+                                            Пн-Пт: 9:00 - 19:00<br>
+                                            Сб: 10:00 - 16:00<br>
+                                            Вс: выходной
+                                        </p>
+                                        
+                                        <h6><i class="fas fa-car text-primary"></i> Парковка</h6>
+                                        <p>Бесплатная парковка<br>
+                                        для клиентов</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Форма обратной связи -->
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Обратная связь</h5>
+                            <form>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="name" class="form-label">Имя *</label>
+                                            <input type="text" class="form-control" id="name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">Телефон *</label>
+                                            <input type="tel" class="form-control" id="phone" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Тема сообщения</label>
+                                    <input type="text" class="form-control" id="subject">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">Сообщение *</label>
+                                    <textarea class="form-control" id="message" rows="5" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Отправить сообщение
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <!-- Карта (заглушка) -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>Как нас найти</h6>
+                            <div class="bg-light text-center py-5">
+                                <i class="fas fa-map fa-3x text-muted"></i>
+                                <p class="mt-2 text-muted">Карта будет здесь</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительная информация -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h6>Дополнительно</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-shipping-fast text-primary"></i> Доставка по Москве</li>
+                                <li><i class="fas fa-tools text-primary"></i> Установка запчастей</li>
+                                <li><i class="fas fa-certificate text-primary"></i> Гарантия качества</li>
+                                <li><i class="fas fa-headset text-primary"></i> Техподдержка</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

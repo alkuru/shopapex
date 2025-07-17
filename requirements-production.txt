@@ -1,0 +1,44 @@
+# Production зависимости для ShopApex
+# Основные Django зависимости
+Django>=4.2.0,<5.0
+django-cors-headers
+django-filter
+djangorestframework
+django-environ
+psycopg2-binary
+
+# База данных и кэширование
+redis
+django-redis
+
+# Фоновые задачи
+celery
+celery[redis]
+
+# Мониторинг и логирование
+sentry-sdk[django]
+django-debug-toolbar  # Только для development
+
+# Веб-сервер
+gunicorn
+whitenoise[brotli]
+
+# Безопасность
+django-ratelimit
+django-csp
+
+# API документация
+drf-spectacular
+
+# Обработка изображений
+Pillow
+
+# Утилиты
+requests
+python-dateutil
+pytz
+
+# Тестирование (только для CI)
+pytest
+pytest-django
+coverage

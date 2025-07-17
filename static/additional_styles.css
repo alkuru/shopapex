@@ -1,0 +1,33 @@
+@charset "UTF-8";
+/* HERO BLOCK стили */
+/* Исправленный путь и временный фон для отладки */
+.hero-block {
+  position: relative;
+  background: #232323 url("/static/images/hero1_bg.jpg") center center/cover no-repeat;
+  min-height: 950px;
+  width: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.55);
+  z-index: 1;
+}
+.hero-content {
+  z-index: 2;
+  position: relative;
+  top: -220px;
+}
+/* Дополнительные стили для классической версии */
+.automotive-search-container {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border: 2px solid var(--auto-silver);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+/* ...existing code... */

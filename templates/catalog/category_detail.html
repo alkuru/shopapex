@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:home' %}">Каталог</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:categories' %}">Категории</a></li>
+                    <li class="breadcrumb-item active">{{ category.name }}</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ category.name }}</h1>
+                <span class="badge bg-primary">{{ products.paginator.count }} товаров</span>
+            </div>
+            
+            {% if category.description %}
+            <div class="alert alert-info">
+                {{ category.description }}
+            </div>
+            {% endif %}
+            
+            {% if products %}
+                <div class="row">
+                    {% for product in products %}
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card h-100">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h6 class="card-title">{{ product.name|truncatechars:50 }}</h6>
+                                <p class="card-text">
+                                    <small class="text-muted">{{ product.brand.name }}</small><br>
+                                    <small class="text-muted">Артикул: {{ product.article }}</small><br>
+                                    <strong class="text-primary">{{ product.price }} ₽</strong>
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'catalog_web:product_detail' product.id %}" class="btn btn-sm btn-outline-primary">
+                                        Подробнее
+                                    </a>
+                                    <button class="btn btn-sm btn-primary" onclick="addToCart({{ product.id }})">
+                                        <i class="fas fa-cart-plus"></i> В корзину
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Пагинация -->
+                {% if products.has_other_pages %}
+                <nav aria-label="Пагинация товаров">
+                    <ul class="pagination justify-content-center">
+                        {% if products.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">Первая</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ products.previous_page_number }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ products.number }} из {{ products.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if products.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ products.next_page_number }}">Следующая</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ products.paginator.num_pages }}">Последняя</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
+                    <h3>В этой категории пока нет товаров</h3>
+                    <p class="text-muted">Товары будут добавлены в ближайшее время.</p>
+                    <a href="{% url 'catalog_web:categories' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Все категории
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addToCart(productId) {
+    // Заглушка для добавления в корзину
+    alert('Товар добавлен в корзину! (ID: ' + productId + ')');
+    // Здесь будет AJAX запрос к API для добавления товара в корзину
+}
+</script>
+{% endblock %}

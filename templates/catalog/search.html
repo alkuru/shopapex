@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load brand_extras %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+  .main-article-td {
+    background: #F5F5DC !important;
+  }
+  .custom-black-border {
+    border: 3px solid #696969 !important;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .main-article-row {
+    border-top: 4px solid #696969 !important;
+    border-bottom: 4px solid #696969 !important;
+    background: #F5F5DC !important;
+  }
+  .analogs-label-row td {
+    border-top: 4px solid #696969 !important;
+    border-bottom: 4px solid #696969 !important;
+    background: #A9A9A9 !important;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #fff !important;
+    text-align: left;
+    letter-spacing: 1px;
+  }
+  .table thead th {
+    border-top: 4px solid #696969 !important;
+    border-bottom: 4px solid #696969 !important;
+    background: #A9A9A9 !important;
+    color: #fff !important;
+  }
+  .table thead th a,
+  .table thead th a:visited,
+  .table thead th a:active {
+    color: #fff !important;
+    text-decoration: underline;
+  }
+  .table thead th a:hover {
+    color: #e0e0e0 !important;
+  }
+  .analog-row {
+    background: #f7faff !important;
+  }
+  .search-btn-custom {
+    background: #F08080 !important;
+    border-color: #F08080 !important;
+    color: #fff !important;
+  }
+  .search-btn-custom:hover, .search-btn-custom:focus {
+    background: #e06666 !important;
+    border-color: #e06666 !important;
+    color: #fff !important;
+  }
+  .cart-btn-custom {
+    background: #F08080 !important;
+    border-color: #F08080 !important;
+    color: #fff !important;
+  }
+  .cart-btn-custom:hover, .cart-btn-custom:focus {
+    background: #e06666 !important;
+    border-color: #e06666 !important;
+    color: #fff !important;
+  }
+</style>
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:home' %}">Каталог</a></li>
+                    <li class="breadcrumb-item active">Поиск</li>
+                </ol>
+            </nav>
+            
+            {% if query %}
+                <h1 class="mb-4" style="font-size:1.2rem; font-weight:normal;">
+                  <span class="alert alert-info d-inline-block mb-0 w-100" style="border:none;background:#F5F5DC;color:#222;padding:0.5em 1em; font-size:1rem; max-width: 480px; min-width: 260px; width: 100%; box-sizing: border-box;">
+                    <i class="fas fa-search"></i> Результаты поиска по артикулу: "<strong>{{ query }}</strong>"
+                    {% if products %}
+                        (найдено товаров: {{ products.paginator.count }})
+                    {% endif %}
+                  </span>
+                </h1>
+            {% else %}
+                <h1 class="mb-4">{{ page_title }}</h1>
+            {% endif %}
+            <!-- Форма поиска -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <form method="get" class="d-flex">
+                        <input type="text" name="q" class="form-control me-2" placeholder="Поиск по артикулу..." value="{{ query }}" required>
+                        <button type="submit" class="btn btn-primary search-btn-custom">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                    </form>
+                </div>
+            </div>
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                {% if products %}
+                <div class="table-responsive">
+                  <div class="custom-black-border">
+                  <table class="table table-bordered align-middle table-sm bg-white mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Товар / Запрошенный артикул</th>
+                        <th>Описание</th>
+                        <th>Наличие</th>
+                        <th>
+                          <a href="?q={{ query }}&sort=delivery_time{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.sort == 'delivery_time' and not request.GET.order %}&order=desc{% endif %}">
+                            Срок поставки
+                            {% if request.GET.sort == 'delivery_time' %}
+                              <i class="fas fa-sort-amount-{{ request.GET.order|default:'asc' }}"></i>
+                            {% else %}
+                              <i class="fas fa-sort text-muted"></i>
+                            {% endif %}
+                          </a>
+                        </th>
+                        <th>Склад</th>
+                        <th>
+                          <a href="?q={{ query }}&sort=price{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.sort == 'price' and not request.GET.order %}&order=desc{% endif %}">
+                            Цена
+                            {% if request.GET.sort == 'price' %}
+                              <i class="fas fa-sort-amount-{{ request.GET.order|default:'asc' }}"></i>
+                            {% else %}
+                              <i class="fas fa-sort text-muted"></i>
+                            {% endif %}
+                          </a>
+                        </th>
+                        <th>Корзина</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+{# --- Основной артикул --- #}
+{% for product in products %}
+  {% if product.is_main_article|stringformat:'s' == 'True' %}
+  <tr class="main-article-row">
+    <td class="main-article-td">
+      <div style="display: flex; align-items: center; gap: 0.5em;">
+        {% with iso=product.brand|brand_flag %}
+          {% if iso %}
+            <span style="min-width: 24px; display: inline-block;">
+              <img src="https://flagcdn.com/{{ iso }}.svg" width="24" height="18" alt="flag" style="display: block; border-radius: 3px;" title="{{ iso|upper }}">
+            </span>
+          {% else %}
+            <span style="min-width: 24px; display: inline-block;"></span>
+          {% endif %}
+        {% endwith %}
+        <strong>{{ product.article }}</strong>
+        {% if product.brand %} <span class="text-muted">{{ product.brand }}</span>{% endif %}
+      </div>
+    </td>
+    <td class="main-article-td">{{ product.description|default:"-"|truncatechars:60 }}</td>
+    <td class="main-article-td">
+      {% if product.stock_quantity is not None %}
+        {% if product.stock_quantity > 10 %}
+          > 10 шт.
+        {% elif product.stock_quantity > 0 %}
+          {{ product.stock_quantity }} шт.
+        {% else %}
+          <span class="text-danger">0</span>
+        {% endif %}
+      {% else %}
+        —
+      {% endif %}
+    </td>
+    <td class="main-article-td">{{ product.delivery_time|default:"-" }}</td>
+    <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
+    <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
+    <td class="main-article-td">
+      <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.id }})">
+        <i class="fas fa-cart-plus"></i>
+      </button>
+    </td>
+  </tr>
+  {% endif %}
+{% endfor %}
+{# --- Аналоги --- #}
+{% if products|length > 1 %}
+  <tr class="analogs-label-row"><td colspan="7">Аналоги</td></tr>
+  {% for product in products %}
+    {% if not product.is_main_article or product.is_main_article|stringformat:'s' != 'True' %}
+    <tr class="analog-row">
+      <td>
+        <div style="display: flex; align-items: center; gap: 0.5em;">
+          {% with iso=product.brand|brand_flag %}
+            {% if iso %}
+              <span style="min-width: 24px; display: inline-block;">
+                <img src="https://flagcdn.com/{{ iso }}.svg" width="24" height="18" alt="flag" style="display: block; border-radius: 3px;" title="{{ iso|upper }}">
+              </span>
+            {% else %}
+              <span style="min-width: 24px; display: inline-block;"></span>
+            {% endif %}
+          {% endwith %}
+          <strong>{{ product.article }}</strong>
+          {% if product.brand %} <span class="text-muted">{{ product.brand }}</span>{% endif %}
+        </div>
+      </td>
+      <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
+      <td>
+        {% if product.stock_quantity is not None %}
+          {% if product.stock_quantity > 10 %}
+            > 10 шт.
+          {% elif product.stock_quantity > 0 %}
+            {{ product.stock_quantity }} шт.
+          {% else %}
+            <span class="text-danger">0</span>
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ product.delivery_time|default:"-" }}</td>
+      <td>{{ product.warehouse|default:"-" }}</td>
+      <td><strong>{{ product.price }} ₽</strong></td>
+      <td>
+        <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.id }})">
+          <i class="fas fa-cart-plus"></i>
+        </button>
+      </td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+                    <!-- Пагинация -->
+                    {% if products.has_other_pages %}
+                    <nav aria-label="Пагинация поиска">
+                        <ul class="pagination justify-content-center">
+                            {% if products.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ query }}&page=1">Первая</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ query }}&page={{ products.previous_page_number }}">Предыдущая</a>
+                                </li>
+                            {% endif %}
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Страница {{ products.number }} из {{ products.paginator.num_pages }}
+                                </span>
+                            </li>
+                            {% if products.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ query }}&page={{ products.next_page_number }}">Следующая</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?q={{ query }}&page={{ products.paginator.num_pages }}">Последняя</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-5x text-muted mb-3"></i>
+                        <h3>Товары не найдены</h3>
+                        <p class="text-muted">По запросу "{{ query }}" ничего не найдено. Попробуйте изменить поисковый запрос.</p>
+                        <a href="{% url 'catalog_web:home' %}" class="btn btn-primary search-btn-custom">
+                            <i class="fas fa-arrow-left"></i> Вернуться в каталог
+                        </a>
+                    </div>
+                {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addToCart(productId) {
+    // Заглушка для добавления в корзину
+    alert('Товар добавлен в корзину! (ID: ' + productId + ')');
+    // Здесь будет AJAX запрос к API для добавления товара в корзину
+}
+</script>
+{% endblock %}

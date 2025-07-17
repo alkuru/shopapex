@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Поставщики - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.supplier-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.supplier-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.api-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.api-connected {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.api-error {
+    background-color: #f5c6cb;
+    color: #721c24;
+}
+
+.api-not-configured {
+    background-color: #f7f7f7;
+    color: #6c757d;
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+
+.search-form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-truck"></i> Поставщики</h1>
+                <a href="/admin/catalog/supplier/add/" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Добавить поставщика
+                </a>
+            </div>
+
+            <!-- Поиск и фильтры -->
+            <div class="search-form">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="search" class="form-label">Поиск по названию, описанию или контактному лицу</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Введите текст для поиска">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="active" class="form-label">Статус</label>
+                        <select class="form-control" id="active" name="active">
+                            <option value="">Все</option>
+                            <option value="true" {% if active_filter == 'true' %}selected{% endif %}>Активные</option>
+                            <option value="false" {% if active_filter == 'false' %}selected{% endif %}>Неактивные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                        <a href="{% url 'catalog_web:supplier_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Сбросить
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Список поставщиков -->
+            {% if page_obj %}
+                {% for supplier in page_obj %}
+                <div class="supplier-card">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>
+                                <a href="{% url 'catalog_web:supplier_detail' supplier.pk %}" class="text-decoration-none">
+                                    {{ supplier.name }}
+                                </a>
+                                <span class="supplier-status {% if supplier.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if supplier.is_active %}Активен{% else %}Неактивен{% endif %}
+                                </span>
+                            </h4>
+                            
+                            {% if supplier.description %}
+                            <p class="text-muted mb-2">{{ supplier.description|truncatewords:20 }}</p>
+                            {% endif %}
+                            
+                            <div class="row">
+                                {% if supplier.contact_person %}
+                                <div class="col-md-6">
+                                    <small><strong>Контактное лицо:</strong> {{ supplier.contact_person }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                {% if supplier.email %}
+                                <div class="col-md-6">
+                                    <small><strong>Email:</strong> {{ supplier.email }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                {% if supplier.phone %}
+                                <div class="col-md-6">
+                                    <small><strong>Телефон:</strong> {{ supplier.phone }}</small>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="col-md-6">
+                                    <small><strong>Товаров:</strong> {{ supplier.products.count }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                {% if supplier.api_url %}
+                                    {% with last_log=supplier.sync_logs.first %}
+                                        {% if last_log.status == 'completed' %}
+                                            <span class="api-status api-connected">✓ API работает</span>
+                                        {% elif last_log.status == 'error' %}
+                                            <span class="api-status api-error">✗ Ошибка API</span>
+                                        {% else %}
+                                            <span class="api-status api-not-configured">? Не проверен</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    <span class="api-status api-not-configured">API не настроен</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'catalog_web:supplier_detail' supplier.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Просмотр
+                                </a>
+                                
+                                {% if supplier.api_url %}
+                                <a href="{% url 'catalog_web:supplier_test_api' supplier.pk %}" 
+                                   class="btn btn-outline-info btn-sm"
+                                   onclick="return confirm('Запустить тест API подключения?')">
+                                    <i class="fas fa-plug"></i> Тест API
+                                </a>
+                                
+                                <a href="{% url 'catalog_web:supplier_sync' supplier.pk %}" 
+                                   class="btn btn-outline-success btn-sm"
+                                   onclick="return confirm('Запустить синхронизацию товаров? Это может занять некоторое время.')">
+                                    <i class="fas fa-sync"></i> Синхронизация
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{% url 'catalog_web:supplier_products' supplier.pk %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-boxes"></i> Товары
+                                </a>
+                                
+                                <a href="/admin/catalog/supplier/{{ supplier.pk }}/change/" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit"></i> Изменить
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if supplier.last_sync_at %}
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> Последняя синхронизация: {{ supplier.last_sync_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ page_obj.next_page_number }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-truck-loading fa-3x text-muted mb-3"></i>
+                    <h4>Поставщики не найдены</h4>
+                    <p class="text-muted">Пока нет ни одного поставщика или они не соответствуют критериям поиска.</p>
+                    <a href="/admin/catalog/supplier/add/" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить первого поставщика
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

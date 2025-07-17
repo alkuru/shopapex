@@ -1,0 +1,516 @@
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShopsParts - Автозапчасти{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #212121;
+            --secondary-color: #424242;
+            --accent-color: #d32f2f;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --auto-dark: #212121;
+            --auto-grey: #424242;
+            --auto-light-grey: #616161;
+            --auto-red: #d32f2f;
+            --auto-silver: #9e9e9e;
+            --auto-white: #fafafa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, 
+                #f5f5f5 0%,
+                #eeeeee 25%,
+                #e0e0e0 50%,
+                #d6d6d6 75%,
+                #cccccc 100%
+            );
+            min-height: 100vh;
+            color: #212121;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--auto-red) !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .navbar {
+            background: linear-gradient(90deg, var(--auto-dark), var(--auto-grey)) !important;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.4);
+            border-bottom: 3px solid var(--auto-red);
+        }
+        
+        .navbar-nav .nav-link {
+            color: white !important;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: var(--auto-red) !important;
+            text-shadow: 0 0 8px rgba(211,47,47,0.6);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, 
+                var(--auto-dark) 0%, 
+                var(--auto-grey) 50%, 
+                #1a1a1a 100%);
+            color: white;
+            padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 4px solid var(--auto-red);
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(211,47,47,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(158,158,158,0.1) 0%, transparent 50%),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="autogrid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23autogrid)"/></svg>');
+            opacity: 0.6;
+        }
+        
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+            color: white;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 2;
+            color: var(--auto-silver);
+        }
+        
+        .category-card {
+            background: linear-gradient(145deg, 
+                rgba(250,250,250,0.98) 0%,
+                rgba(245,245,245,0.95) 50%,
+                rgba(238,238,238,0.92) 100%
+            );
+            border: 2px solid var(--auto-silver);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 25px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(3px);
+        }
+        
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, 
+                transparent 0%, 
+                rgba(158,158,158,0.05) 50%, 
+                transparent 100%);
+            opacity: 0.8;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 
+                0 15px 40px rgba(0,0,0,0.25),
+                inset 0 1px 0 rgba(255,255,255,0.9),
+                0 0 25px rgba(211,47,47,0.15);
+            border-color: var(--auto-red);
+        }
+        
+        .category-card .card-body {
+            position: relative;
+            z-index: 2;
+            padding: 2rem 1.5rem;
+        }
+        
+        .category-card .fas {
+            color: var(--auto-grey);
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        
+        .category-card:hover .fas {
+            color: var(--auto-red);
+            transform: scale(1.1);
+            filter: drop-shadow(0 4px 8px rgba(211,47,47,0.3));
+        }
+        
+        .category-card .card-title {
+            color: var(--auto-dark);
+            font-weight: 700;
+            font-size: 1.3rem;
+            text-shadow: 1px 1px 1px rgba(255,255,255,0.5);
+            margin-top: 1rem;
+        }
+        
+        .category-card .card-text {
+            color: var(--auto-light-grey);
+            font-weight: 500;
+        }
+        
+        .category-card .btn {
+            background: linear-gradient(145deg, var(--auto-grey), var(--auto-dark));
+            border: 2px solid var(--auto-light-grey);
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 4px 12px rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        
+        .category-card .btn:hover {
+            background: linear-gradient(145deg, var(--auto-red), #b71c1c);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: var(--auto-red);
+            color: white;
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, var(--auto-dark), #1a1a1a);
+            color: white;
+            padding: 3rem 0 1rem;
+            margin-top: 4rem;
+            position: relative;
+            overflow: hidden;
+            border-top: 4px solid var(--auto-red);
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 30% 20%, rgba(211,47,47,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(158,158,158,0.05) 0%, transparent 50%);
+            opacity: 0.8;
+        }
+        
+        .footer h5 {
+            color: var(--auto-red);
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 2;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .footer p, .footer li {
+            position: relative;
+            z-index: 2;
+            color: var(--auto-silver);
+        }
+        
+        .footer a {
+            transition: all 0.3s ease;
+            color: var(--auto-silver);
+        }
+        
+        .footer a:hover {
+            color: var(--auto-red) !important;
+            text-shadow: 0 0 8px rgba(211,47,47,0.6);
+        }
+        
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .vin-search-section {
+            background: linear-gradient(135deg, 
+                #f8f9fa 0%,
+                #f1f3f4 50%,
+                #e8eaed 100%
+            );
+            padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
+            color: var(--auto-dark);
+            border-top: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .vin-search-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(211,47,47,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(66,66,66,0.08) 0%, transparent 50%);
+            opacity: 0.6;
+        }
+        
+        .vin-search-section h2 {
+            color: var(--auto-dark);
+            font-weight: 800;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            position: relative;
+            z-index: 2;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .vin-search-section .form-control {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border: 2px solid var(--auto-silver);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            color: var(--auto-dark);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.1),
+                0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .vin-search-section .form-control:focus {
+            background: linear-gradient(145deg, #ffffff, #ffffff);
+            border-color: var(--auto-red);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.05),
+                0 0 15px rgba(211,47,47,0.3),
+                0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .vin-search-section .btn {
+            background: linear-gradient(145deg, var(--auto-red), #b71c1c);
+            border: 2px solid var(--auto-red);
+            border-radius: 8px;
+            padding: 1rem 2rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 
+                0 4px 12px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .vin-search-section .btn:hover {
+            background: linear-gradient(145deg, #c62828, var(--auto-red));
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .news-card {
+            height: 100%;
+            border: 2px solid var(--auto-silver);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .news-card:hover {
+            border-color: var(--auto-red);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        /* Дополнительные стили для кнопок */
+        .btn-primary {
+            background: linear-gradient(145deg, var(--auto-red), #b71c1c);
+            border: 2px solid var(--auto-red);
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #c62828, var(--auto-red));
+            border-color: #c62828;
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        /* Стили для каталога */
+        .catalog-hero-image, .catalog-main-image {
+            border-radius: 20px;
+            border: 3px solid #CD853F;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .catalog-hero-image:hover, .catalog-main-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-car"></i> ShopApex
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/catalog/">Каталог</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/vin-search/">Поиск по VIN</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/contacts/">Контакты</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/catalog/cart/">
+                            <i class="fas fa-shopping-cart"></i> Корзина
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="fas fa-cog"></i> Админка
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contact Bar -->
+    <div class="bg-dark text-white py-2">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <small>
+                        <i class="fas fa-phone"></i> +7 (999) 123-45-67
+                        <i class="fas fa-envelope ms-3"></i> info@shopapex.ru
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small>
+                        <a href="#" class="text-white text-decoration-none me-3">
+                            <i class="fab fa-vk"></i> ВКонтакте
+                        </a>
+                        <a href="#" class="text-white text-decoration-none">
+                            <i class="fab fa-telegram"></i> Telegram
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>ShopApex</h5>
+                    <p>Надежный поставщик автозапчастей. Качественные детали для вашего автомобиля по доступным ценам.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Контакты</h5>
+                    <p>
+                        <i class="fas fa-phone"></i> +7 (999) 123-45-67<br>
+                        <i class="fas fa-envelope"></i> info@shopapex.ru<br>
+                        <i class="fas fa-map-marker-alt"></i> г. Москва, ул. Примерная, д. 123
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Информация</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/about/" class="text-white text-decoration-none">О компании</a></li>
+                        <li><a href="/delivery/" class="text-white text-decoration-none">Доставка и оплата</a></li>
+                        <li><a href="/warranty/" class="text-white text-decoration-none">Гарантии</a></li>
+                        <li><a href="/contacts/" class="text-white text-decoration-none">Контакты</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p>&copy; 2025 ShopApex. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

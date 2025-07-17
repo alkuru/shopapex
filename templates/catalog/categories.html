@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:home' %}">Каталог</a></li>
+                    <li class="breadcrumb-item active">Категории</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">{{ page_title }}</h1>
+            
+            <div class="row">
+                {% for category in categories %}
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="card category-card h-100">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" class="card-img-top" alt="{{ category.name }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ category.name }}</h5>
+                            <p class="card-text">{{ category.description|truncatewords:15 }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'catalog_web:category_detail' category.id %}" class="btn btn-primary w-100">
+                                Перейти к товарам
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-5x text-muted mb-3"></i>
+                        <h3>Категории не найдены</h3>
+                        <p class="text-muted">Пока что категории товаров не добавлены.</p>
+                        <a href="{% url 'catalog_web:home' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Вернуться в каталог
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

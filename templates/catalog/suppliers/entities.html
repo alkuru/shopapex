@@ -1,0 +1,167 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Интеграция с API автозапчастей{% endblock %}
+
+{% block content %}
+<h1>{{ supplier.name }} - Интеграция с API автозапчастей</h1>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Обзор интеграции</h4>
+                <div class="float-end">
+                    <a href="{% url 'catalog_web:supplier_detail' supplier.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Назад к поставщику
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Статистика сущностей</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><i class="fas fa-users"></i> Сотрудники</td>
+                                <td><span class="badge bg-primary">{{ stats.staff_count }}</span></td>
+                                <td>
+                                    <a href="{% url 'catalog_web:supplier_staff' supplier.id %}" class="btn btn-sm btn-outline-primary">
+                                        Просмотр
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-shipping-fast"></i> Способы доставки</td>
+                                <td><span class="badge bg-info">{{ stats.delivery_methods_count }}</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-tasks"></i> Статусы заказов</td>
+                                <td><span class="badge bg-warning">{{ stats.order_statuses_count }}</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-layer-group"></i> Группы клиентов</td>
+                                <td><span class="badge bg-success">{{ stats.client_groups_count }}</span></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-friends"></i> Клиенты</td>
+                                <td><span class="badge bg-primary">{{ stats.clients_count }}</span></td>
+                                <td>
+                                    <a href="{% url 'catalog_web:supplier_clients' supplier.id %}" class="btn btn-sm btn-outline-primary">
+                                        Просмотр
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-shopping-cart"></i> Заказы</td>
+                                <td><span class="badge bg-danger">{{ stats.orders_count }}</span></td>
+                                <td>
+                                    <a href="{% url 'catalog_web:supplier_orders' supplier.id %}" class="btn btn-sm btn-outline-primary">
+                                        Просмотр
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-coins"></i> Транзакции баланса</td>
+                                <td><span class="badge bg-dark">{{ stats.balance_transactions_count }}</span></td>
+                                <td>-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Действия с интеграцией</h5>
+                        <form method="post" action="{% url 'catalog_web:supplier_sync_entities' supplier.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="entity_type" class="form-label">Тип синхронизации:</label>
+                                <select name="entity_type" id="entity_type" class="form-select">
+                                    <option value="all">Все сущности</option>
+                                    <option value="staff">Только сотрудники</option>
+                                    <option value="delivery_methods">Только способы доставки</option>
+                                    <option value="order_statuses">Только статусы заказов</option>
+                                    <option value="client_groups">Только группы клиентов</option>
+                                    <option value="clients">Только клиенты</option>
+                                    <option value="orders">Только заказы</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sync"></i> Синхронизировать
+                            </button>
+                        </form>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <a href="{% url 'catalog_web:supplier_search' supplier.id %}" class="btn btn-info">
+                                <i class="fas fa-search"></i> Поиск товаров по артикулу
+                            </a>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <a href="{% url 'catalog_web:supplier_products' supplier.id %}" class="btn btn-secondary">
+                                <i class="fas fa-box"></i> Товары поставщика
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Быстрый доступ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h6>Сотрудники</h6>
+                                <p class="text-muted">Просмотр и управление сотрудниками поставщика</p>
+                                <a href="{% url 'catalog_web:supplier_staff' supplier.id %}" class="btn btn-primary btn-sm">
+                                    Перейти
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-friends fa-2x text-success mb-2"></i>
+                                <h6>Клиенты</h6>
+                                <p class="text-muted">Управление клиентской базой поставщика</p>
+                                <a href="{% url 'catalog_web:supplier_clients' supplier.id %}" class="btn btn-success btn-sm">
+                                    Перейти
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-danger">
+                            <div class="card-body text-center">
+                                <i class="fas fa-shopping-cart fa-2x text-danger mb-2"></i>
+                                <h6>Заказы</h6>
+                                <p class="text-muted">Обработка и отслеживание заказов</p>
+                                <a href="{% url 'catalog_web:supplier_orders' supplier.id %}" class="btn btn-danger btn-sm">
+                                    Перейти
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

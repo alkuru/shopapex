@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Поставщики - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.stat-card h3 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+.stat-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.api-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.api-connected {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.api-error {
+    background-color: #f5c6cb;
+    color: #721c24;
+}
+
+.api-not-configured {
+    background-color: #f7f7f7;
+    color: #6c757d;
+}
+
+.product-row {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 10px 0;
+}
+
+.product-row:last-child {
+    border-bottom: none;
+}
+
+.log-entry {
+    border-left: 4px solid #ddd;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+}
+
+.log-entry.status-completed {
+    border-left-color: #28a745;
+}
+
+.log-entry.status-error {
+    border-left-color: #dc3545;
+}
+
+.log-entry.status-in_progress {
+    border-left-color: #ffc107;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок и навигация -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'catalog_web:supplier_list' %}">Поставщики</a></li>
+                            <li class="breadcrumb-item active">{{ supplier.name }}</li>
+                        </ol>
+                    </nav>
+                    <h1>
+                        <i class="fas fa-truck"></i> {{ supplier.name }}
+                        <span class="status-badge {% if supplier.is_active %}status-active{% else %}status-inactive{% endif %}">
+                            {% if supplier.is_active %}Активен{% else %}Неактивен{% endif %}
+                        </span>
+                    </h1>
+                </div>
+                <div class="btn-group">
+                    {% if supplier.api_url %}
+                    <form method="post" action="{% url 'catalog_web:supplier_test_api' supplier.pk %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-info" onclick="return confirm('Запустить тест API подключения?')">
+                            <i class="fas fa-plug"></i> Тест API
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'catalog_web:supplier_sync' supplier.pk %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Запустить синхронизацию товаров? Это может занять некоторое время.')">
+                            <i class="fas fa-sync"></i> Синхронизация
+                        </button>
+                    </form>
+                    {% if supplier.api_type == 'autoparts' %}
+                    <a href="{% url 'catalog_web:supplier_entities' supplier.pk %}" class="btn btn-primary">
+                        <i class="fas fa-cogs"></i> Интеграция API
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    <a href="/admin/catalog/supplier/{{ supplier.pk }}/change/" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Редактировать
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <h3>{{ stats.total_products }}</h3>
+                        <p>Всего товаров</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <h3>{{ stats.active_products }}</h3>
+                        <p>Активных товаров</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <h3>{{ stats.linked_products }}</h3>
+                        <p>В каталоге</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <h3>{{ stats.total_stock_value|floatformat:0 }}₽</h3>
+                        <p>Стоимость склада</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Основная информация -->
+                <div class="col-md-8">
+                    <div class="info-card">
+                        <h4><i class="fas fa-info-circle"></i> Основная информация</h4>
+                        <div class="row">
+                            {% if supplier.description %}
+                            <div class="col-12 mb-3">
+                                <strong>Описание:</strong><br>
+                                {{ supplier.description }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if supplier.contact_person %}
+                            <div class="col-md-6 mb-2">
+                                <strong>Контактное лицо:</strong><br>
+                                {{ supplier.contact_person }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if supplier.email %}
+                            <div class="col-md-6 mb-2">
+                                <strong>Email:</strong><br>
+                                <a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>
+                            </div>
+                            {% endif %}
+                            
+                            {% if supplier.phone %}
+                            <div class="col-md-6 mb-2">
+                                <strong>Телефон:</strong><br>
+                                <a href="tel:{{ supplier.phone }}">{{ supplier.phone }}</a>
+                            </div>
+                            {% endif %}
+                            
+                            {% if supplier.website %}
+                            <div class="col-md-6 mb-2">
+                                <strong>Сайт:</strong><br>
+                                <a href="{{ supplier.website }}" target="_blank">{{ supplier.website }}</a>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="col-md-6 mb-2">
+                                <strong>Дата создания:</strong><br>
+                                {{ supplier.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                            
+                            {% if supplier.last_sync_at %}
+                            <div class="col-md-6 mb-2">
+                                <strong>Последняя синхронизация:</strong><br>
+                                {{ supplier.last_sync_at|date:"d.m.Y H:i" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- API настройки -->
+                    <div class="info-card">
+                        <h4><i class="fas fa-cogs"></i> API настройки</h4>
+                        {% if supplier.api_url %}
+                        <div class="mb-3">
+                            {% with last_log=supplier.sync_logs.first %}
+                                {% if last_log.status == 'completed' %}
+                                    <span class="api-status api-connected">✓ API работает</span>
+                                {% elif last_log.status == 'error' %}
+                                    <span class="api-status api-error">✗ Ошибка API</span>
+                                {% else %}
+                                    <span class="api-status api-not-configured">? Не проверен</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <strong>URL API:</strong><br>
+                                <code>{{ supplier.api_url }}</code>
+                            </div>
+                            
+                            <div class="col-md-6 mb-2">
+                                <strong>Формат данных:</strong><br>
+                                {{ supplier.get_data_format_display }}
+                            </div>
+                            
+                            <div class="col-md-6 mb-2">
+                                <strong>Частота синхронизации:</strong><br>
+                                {{ supplier.get_sync_frequency_display }}
+                            </div>
+                            
+                            <div class="col-md-6 mb-2">
+                                <strong>Наценка:</strong><br>
+                                {{ supplier.markup_percentage }}%
+                            </div>
+                            
+                            <div class="col-md-6 mb-2">
+                                <strong>Автоактивация товаров:</strong><br>
+                                {% if supplier.auto_activate_products %}
+                                    <span class="text-success">Да</span>
+                                {% else %}
+                                    <span class="text-danger">Нет</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">
+                            <i class="fas fa-exclamation-triangle"></i> API не настроен. 
+                            <a href="/admin/catalog/supplier/{{ supplier.pk }}/change/">Настроить API</a>
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Последние товары -->
+                    <div class="info-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="fas fa-boxes"></i> Последние товары</h4>
+                            <a href="{% url 'catalog_web:supplier_products' supplier.pk %}" class="btn btn-outline-primary btn-sm">
+                                Все товары ({{ stats.total_products }})
+                            </a>
+                        </div>
+                        
+                        {% if recent_products %}
+                        {% for product in recent_products %}
+                        <div class="product-row">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <strong>{{ product.name }}</strong><br>
+                                    <small class="text-muted">Артикул: {{ product.supplier_article }}</small>
+                                    {% if product.product %}
+                                    <br><small class="text-success">
+                                        <i class="fas fa-link"></i> Связан с каталогом: {{ product.product.article }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <strong>{{ product.price }}₽</strong><br>
+                                    <small class="text-muted">Склад: {{ product.stock_quantity }}</small>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <span class="badge {% if product.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if product.is_active %}Активен{% else %}Неактивен{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">Товары не найдены.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Логи синхронизации -->
+                <div class="col-md-4">
+                    <div class="info-card">
+                        <h4><i class="fas fa-history"></i> История синхронизации</h4>
+                        
+                        {% if recent_logs %}
+                        {% for log in recent_logs %}
+                        <div class="log-entry status-{{ log.status }}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <strong>
+                                    {% if log.status == 'completed' %}
+                                        <i class="fas fa-check-circle text-success"></i> Завершено
+                                    {% elif log.status == 'error' %}
+                                        <i class="fas fa-times-circle text-danger"></i> Ошибка
+                                    {% else %}
+                                        <i class="fas fa-clock text-warning"></i> В процессе
+                                    {% endif %}
+                                </strong>
+                                <small class="text-muted">{{ log.created_at|date:"d.m H:i" }}</small>
+                            </div>
+                            
+                            <p class="mb-2">{{ log.message|truncatewords:15 }}</p>
+                            
+                            {% if log.status == 'completed' %}
+                            <div class="small text-muted">
+                                Создано: {{ log.products_created }}, 
+                                Обновлено: {{ log.products_updated }}
+                                {% if log.errors_count %}, Ошибок: {{ log.errors_count }}{% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center mt-3">
+                            <a href="/admin/catalog/suppliersynclog/?supplier__id__exact={{ supplier.pk }}" 
+                               class="btn btn-outline-secondary btn-sm">
+                                Все логи
+                            </a>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">История синхронизации пуста.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

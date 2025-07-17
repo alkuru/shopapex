@@ -1,0 +1,186 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Поиск товаров{% endblock %}
+
+{% block content %}
+<h1>{{ supplier.name }} - Поиск товаров по API</h1>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Поиск товаров по артикулу</h4>
+                <div class="float-end">
+                    <a href="{% url 'catalog_web:supplier_entities' supplier.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Назад к интеграции
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Форма поиска -->
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" name="article" value="{{ article }}" class="form-control" 
+                                   placeholder="Введите артикул для поиска" required>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Поиск
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                {% if search_results %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        {{ search_results.message }}
+                    </div>
+
+                    {% if search_results.brands %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Найденные бренды</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Бренд</th>
+                                                <th>Наименование группы</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for brand in search_results.brands %}
+                                            <tr>
+                                                <td><strong>{{ brand.brand }}</strong></td>
+                                                <td>{{ brand.name }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if search_results.products %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Найденные товары</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Артикул</th>
+                                                <th>Бренд</th>
+                                                <th>Наименование</th>
+                                                <th>Цена</th>
+                                                <th>Наличие</th>
+                                                <th>Кратность</th>
+                                                <th>Поставка</th>
+                                                <th>Возврат</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for product in search_results.products %}
+                                            <tr>
+                                                <td><strong>{{ product.article }}</strong></td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ product.brand }}</span>
+                                                </td>
+                                                <td>
+                                                    {{ product.name }}
+                                                    {% if product.unsafe %}
+                                                        <span class="badge bg-warning" title="Возможно неточная замена">!</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <strong>{{ product.price }} ₽</strong>
+                                                    {% if product.percent %}
+                                                        <br><small class="text-muted">{{ product.percent }}% вероятность</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if product.stock == -1 %}
+                                                        <span class="badge bg-secondary">Не передается</span>
+                                                    {% elif product.stock > 0 %}
+                                                        <span class="badge bg-success">{{ product.stock }} шт.</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Нет в наличии</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ product.multiplicity }}</td>
+                                                <td>
+                                                    {% if product.deliverytime %}
+                                                        {% if product.deliverytime.min == product.deliverytime.max %}
+                                                            {{ product.deliverytime.min }} дн.
+                                                        {% else %}
+                                                            {{ product.deliverytime.min }}-{{ product.deliverytime.max }} дн.
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if product.returnable %}
+                                                        <span class="badge bg-success">Да</span>
+                                                        {% if product.return_cost %}
+                                                            <br><small class="text-muted">{{ product.return_cost }}% удержание</small>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Нет</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if not search_results.brands and not search_results.products %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            По запросу "{{ article }}" товары не найдены
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if article and not search_results %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Произошла ошибка при поиске товаров
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Как использовать поиск</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Введите артикул товара в поле поиска</li>
+                    <li>Система найдет все бренды, которые производят товары с этим артикулом</li>
+                    <li>Для каждого бренда будут показаны доступные товары с ценами и наличием</li>
+                    <li>Обратите внимание на символ "!" - он означает, что товар может быть неточной заменой</li>
+                    <li>Кратность показывает минимальное количество для заказа</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

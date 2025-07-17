@@ -1,0 +1,212 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ShopApex - Автозапчасти для вашего автомобиля{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4 hero-title">
+                    Автозапчасти для любого автомобиля
+                </h1>
+                <p class="lead mb-4 hero-subtitle">
+                    Широкий ассортимент качественных запчастей от проверенных производителей. 
+                    Профессиональное качество для вашего автомобиля!
+                </p>
+                <div class="search-bar">
+                    <div class="automotive-search-container">
+                        <form method="get" action="{% url 'catalog_web:search' %}" class="input-group input-group-lg">
+                            <input type="text" name="q" class="form-control automotive-input" 
+                                   placeholder="Введите артикул запчасти..." 
+                                   value="{{ request.GET.q }}">
+                            <button class="btn automotive-button" type="submit">
+                                <i class="fas fa-search"></i> НАЙТИ
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="hero-image-container">
+                    {# Фон задаётся через CSS, img удалён #}
+                    <div class="image-overlay">
+                        <div class="overlay-text">
+                            <h3 class="text-white fw-bold">SHOP APEX</h3>
+                            <p class="text-light">Качество и надежность</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="categories-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">Категории запчастей</h2>
+                <p class="section-subtitle">Найдите именно то, что нужно вашему автомобилю</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-md-4 mb-4">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-{{ category.icon|default:'car' }}"></i>
+                    </div>
+                    <h5 class="category-title">{{ category.name }}</h5>
+                    <p class="category-description">{{ category.description|default:"Качественные запчасти для вашего автомобиля"|truncatewords:10 }}</p>
+                    <a href="{% url 'catalog_web:category_detail' category.slug %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-right"></i> Перейти
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">Категории загружаются...</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h5 class="feature-title">Быстрая доставка</h5>
+                    <p class="feature-description">Доставляем запчасти в кратчайшие сроки по всей России</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h5 class="feature-title">Гарантия качества</h5>
+                    <p class="feature-description">Все запчасти проходят строгий контроль качества</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h5 class="feature-title">Профессиональная помощь</h5>
+                    <p class="feature-description">Наши эксперты помогут подобрать нужные запчасти</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h5 class="feature-title">Выгодные цены</h5>
+                    <p class="feature-description">Конкурентные цены на весь ассортимент</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Products Section -->
+<section class="popular-products-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">Популярные товары</h2>
+                <p class="section-subtitle">Часто покупаемые запчасти</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for product in popular_products %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="product-card">
+                    <div class="product-image">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid">
+                        {% else %}
+                            <div class="no-image">
+                                <i class="fas fa-car-side"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <h6 class="product-name">{{ product.name|truncatewords:5 }}</h6>
+                        <p class="product-article">Артикул: {{ product.article }}</p>
+                        <div class="product-price">
+                            {% if product.price %}
+                                <span class="price">{{ product.price }} ₽</span>
+                            {% else %}
+                                <span class="price-request">Цена по запросу</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'catalog_web:product_detail' product.slug %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">Популярные товары загружаются...</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                         <a href="{% url 'catalog_web:home' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-th-large"></i> Весь каталог
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- VIN Search Section -->
+<section class="vin-search-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="section-title">Поиск по VIN коду</h2>
+                <p class="section-subtitle">Найдите точные запчасти для вашего автомобиля</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="vin-search-card">
+                    <form method="post" action="{% url 'vin_search_web:search' %}" class="vin-search-form">
+                        {% csrf_token %}
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="vin" class="form-control vin-input" 
+                                   placeholder="Введите VIN код автомобиля..." 
+                                   pattern="[A-HJ-NPR-Z0-9]{17}" 
+                                   title="VIN код должен содержать 17 символов">
+                            <button class="btn btn-primary vin-button" type="submit">
+                                <i class="fas fa-search"></i> НАЙТИ ПО VIN
+                            </button>
+                        </div>
+                        <div class="vin-help mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                VIN код находится в техпаспорте или на панели приборов автомобиля
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

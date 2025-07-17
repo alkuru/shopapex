@@ -1,0 +1,22 @@
+brand_country_iso = {
+    'Filtron': 'pl',
+    'Zekkert': 'de',
+    'LYNX': 'jp',
+    'Miles': 'kr',
+    'Kolbenschmidt': 'de',
+    'Mann+Hummel': 'de',
+    'Goodwill': 'de',
+    'Bosch': 'de',
+    'Mahle': 'de',
+    'Ashika': 'it',
+    'Pilenga': 'it',
+    'AMD': 'kr',
+    'Big Filter': 'ru',
+    'UNION': 'kr',
+    'Sakura': 'jp',
+    'Kortex': 'kr',
+    'Marshall': 'ru',
+    'Trialli': 'it',
+    'Metaco': 'cn',
+    # ...добавьте остальные бренды по необходимости
+}

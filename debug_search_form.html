@@ -1,0 +1,33 @@
+<!-- Отладочная форма поиска для вставки на главную страницу -->
+<div class="alert alert-warning mt-3">
+    <h5>🔧 Отладочная форма поиска</h5>
+    <p>Если основная форма не работает, попробуйте эту (поиск только по артикулу):</p>
+    
+    <!-- Простая форма без дополнительных классов -->
+    <form method="get" action="/catalog/search/" style="margin-bottom: 10px;">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" name="q" placeholder="Поиск по артикулу..." required style="flex: 1; padding: 8px;">
+            <button type="submit" style="padding: 8px 16px;">Найти</button>
+        </div>
+    </form>
+    
+    <!-- Форма с абсолютным URL -->
+    <form method="get" action="http://127.0.0.1:8000/catalog/search/" style="margin-bottom: 10px;">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" name="q" placeholder="Поиск по артикулу (абсолютный URL)..." required style="flex: 1; padding: 8px;">
+            <button type="submit" style="padding: 8px 16px;">Найти (абс)</button>
+        </div>
+    </form>
+    
+    <!-- Прямые ссылки для тестирования -->
+    <div style="margin-top: 15px;">
+        <strong>Прямые ссылки для тестирования:</strong><br>
+        <a href="/catalog/search/?q=масло" target="_blank">Поиск "масло"</a> |
+        <a href="/catalog/search/?q=тормозные" target="_blank">Поиск "тормозные"</a> |
+        <a href="/catalog/" target="_blank">Каталог</a>
+    </div>
+    
+    <small class="text-muted d-block mt-2">
+        Если эти формы работают, проблема в основной форме поиска.
+    </small>
+</div>

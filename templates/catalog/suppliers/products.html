@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Товары поставщика {{ supplier.name }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.product-linked {
+    border-left: 4px solid #28a745;
+}
+
+.product-unlinked {
+    border-left: 4px solid #ffc107;
+}
+
+.search-form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.product-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.link-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.link-connected {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.link-not-connected {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.product-data {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.stat-summary {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Заголовок и навигация -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'catalog_web:supplier_list' %}">Поставщики</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'catalog_web:supplier_detail' supplier.pk %}">{{ supplier.name }}</a></li>
+                            <li class="breadcrumb-item active">Товары</li>
+                        </ol>
+                    </nav>
+                    <h1><i class="fas fa-boxes"></i> Товары поставщика: {{ supplier.name }}</h1>
+                </div>
+                <div class="btn-group">
+                    {% if supplier.api_url %}
+                    <form method="post" action="{% url 'catalog_web:supplier_sync' supplier.pk %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success" onclick="return confirm('Запустить синхронизацию товаров? Это может занять некоторое время.')">
+                            <i class="fas fa-sync"></i> Синхронизация
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'catalog_web:supplier_detail' supplier.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> К поставщику
+                    </a>
+                </div>
+            </div>
+
+            <!-- Сводка -->
+            <div class="stat-summary">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4>{{ page_obj.paginator.count }}</h4>
+                        <p class="text-muted">Всего товаров</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4>{{ supplier.products.filter_active.count }}</h4>
+                        <p class="text-muted">Активных</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4>{{ supplier.products.filter.count }}</h4>
+                        <p class="text-muted">В каталоге</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4>{{ supplier.products.filter.count }}</h4>
+                        <p class="text-muted">Ожидают связи</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Поиск и фильтры -->
+            <div class="search-form">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Поиск по названию или артикулу</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search }}" placeholder="Введите название или артикул">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="has_product" class="form-label">Связь с каталогом</label>
+                        <select class="form-control" id="has_product" name="has_product">
+                            <option value="">Все товары</option>
+                            <option value="true" {% if has_product == 'true' %}selected{% endif %}>Связанные</option>
+                            <option value="false" {% if has_product == 'false' %}selected{% endif %}>Несвязанные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="active" class="form-label">Статус</label>
+                        <select class="form-control" id="active" name="active">
+                            <option value="">Все</option>
+                            <option value="true" {% if active_filter == 'true' %}selected{% endif %}>Активные</option>
+                            <option value="false" {% if active_filter == 'false' %}selected{% endif %}>Неактивные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-search"></i> Найти
+                        </button>
+                        <a href="{% url 'catalog_web:supplier_products' supplier.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Сбросить
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Список товаров -->
+            {% if page_obj %}
+                {% for product in page_obj %}
+                <div class="product-card {% if product.product %}product-linked{% else %}product-unlinked{% endif %}">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="mb-1">{{ product.name }}</h5>
+                                <div>
+                                    <span class="product-status {% if product.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                        {% if product.is_active %}Активен{% else %}Неактивен{% endif %}
+                                    </span>
+                                    <span class="link-status {% if product.product %}link-connected{% else %}link-not-connected{% endif %}">
+                                        {% if product.product %}В каталоге{% else %}Не связан{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small><strong>Артикул поставщика:</strong> {{ product.supplier_article }}</small>
+                                </div>
+                                {% if product.product %}
+                                <div class="col-md-6">
+                                    <small><strong>Артикул в каталоге:</strong> 
+                                        <a href="/admin/catalog/product/{{ product.product.pk }}/change/" target="_blank">
+                                            {{ product.product.article }}
+                                        </a>
+                                    </small>
+                                </div>
+                                {% endif %}
+                                <div class="col-md-6">
+                                    <small><strong>Обновлен:</strong> {{ product.updated_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small><strong>Создан:</strong> {{ product.created_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                            </div>
+
+                            <!-- Дополнительные данные -->
+                            {% if product.data %}
+                            <div class="product-data">
+                                <small><strong>Данные от поставщика:</strong></small>
+                                <div class="row">
+                                    {% if product.data.brand %}
+                                    <div class="col-md-4">
+                                        <small><strong>Бренд:</strong> {{ product.data.brand }}</small>
+                                    </div>
+                                    {% endif %}
+                                    {% if product.data.model %}
+                                    <div class="col-md-4">
+                                        <small><strong>Модель:</strong> {{ product.data.model }}</small>
+                                    </div>
+                                    {% endif %}
+                                    {% if product.data.year %}
+                                    <div class="col-md-4">
+                                        <small><strong>Год:</strong> {{ product.data.year }}</small>
+                                    </div>
+                                    {% endif %}
+                                    {% if product.data.weight %}
+                                    <div class="col-md-4">
+                                        <small><strong>Вес:</strong> {{ product.data.weight }}</small>
+                                    </div>
+                                    {% endif %}
+                                    {% if product.data.warranty %}
+                                    <div class="col-md-4">
+                                        <small><strong>Гарантия:</strong> {{ product.data.warranty }}</small>
+                                    </div>
+                                    {% endif %}
+                                    {% if product.data.description %}
+                                    <div class="col-12">
+                                        <small><strong>Описание:</strong> {{ product.data.description|truncatewords:15 }}</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <h4 class="text-primary">{{ product.price }}₽</h4>
+                                <small class="text-muted">Склад: {{ product.stock_quantity }} шт.</small>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                {% if product.product %}
+                                <a href="/admin/catalog/product/{{ product.product.pk }}/change/" 
+                                   class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fas fa-edit"></i> Редактировать товар в каталоге
+                                </a>
+                                {% else %}
+                                <button class="btn btn-success btn-sm" 
+                                        onclick="createCatalogProduct({{ product.pk }})">
+                                    <i class="fas fa-plus"></i> Создать товар в каталоге
+                                </button>
+                                {% endif %}
+                                
+                                <a href="/admin/catalog/supplierproduct/{{ product.pk }}/change/" 
+                                   class="btn btn-outline-secondary btn-sm" target="_blank">
+                                    <i class="fas fa-cog"></i> Настройки
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if has_product %}has_product={{ has_product }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if has_product %}has_product={{ has_product }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if search %}search={{ search }}&{% endif %}{% if has_product %}has_product={{ has_product }}&{% endif %}{% if active_filter %}active={{ active_filter }}&{% endif %}page={{ page_obj.next_page_number }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <h4>Товары не найдены</h4>
+                    <p class="text-muted">У этого поставщика пока нет товаров или они не соответствуют критериям поиска.</p>
+                    {% if supplier.api_url %}
+                    <form method="post" action="{% url 'catalog_web:supplier_sync' supplier.pk %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary" onclick="return confirm('Запустить синхронизацию товаров? Это может занять некоторое время.')">
+                            <i class="fas fa-sync"></i> Синхронизировать товары
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания товара -->
+<div class="modal fade" id="createProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создание товара в каталоге</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProductForm">
+                    <div class="mb-3">
+                        <label for="category_id" class="form-label">Категория (необязательно)</label>
+                        <select class="form-control" id="category_id" name="category_id">
+                            <option value="">Выберите категорию</option>
+                            <!-- Будет заполнено через JavaScript -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="brand_id" class="form-label">Бренд (необязательно)</label>
+                        <select class="form-control" id="brand_id" name="brand_id">
+                            <option value="">Выберите бренд</option>
+                            <!-- Будет заполнено через JavaScript -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateProduct()">Создать товар</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentProductId = null;
+
+function createCatalogProduct(productId) {
+    currentProductId = productId;
+    $('#createProductModal').modal('show');
+    
+    // Загружаем категории и бренды
+    loadCategoriesAndBrands();
+}
+
+function loadCategoriesAndBrands() {
+    // Загрузка категорий
+    fetch('/api/catalog/categories/')
+        .then(response => response.json())
+        .then(data => {
+            const categorySelect = document.getElementById('category_id');
+            categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
+            data.results.forEach(category => {
+                categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+            });
+        });
+    
+    // Загрузка брендов
+    fetch('/api/catalog/brands/')
+        .then(response => response.json())
+        .then(data => {
+            const brandSelect = document.getElementById('brand_id');
+            brandSelect.innerHTML = '<option value="">Выберите бренд</option>';
+            data.results.forEach(brand => {
+                brandSelect.innerHTML += `<option value="${brand.id}">${brand.name}</option>`;
+            });
+        });
+}
+
+function submitCreateProduct() {
+    const formData = new FormData();
+    const categoryId = document.getElementById('category_id').value;
+    const brandId = document.getElementById('brand_id').value;
+    
+    if (categoryId) formData.append('category_id', categoryId);
+    if (brandId) formData.append('brand_id', brandId);
+    
+    fetch(`/api/catalog/supplier-products/${currentProductId}/create_product/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error || 'Ошибка создания товара');
+        }
+    })
+    .catch(error => {
+        alert('Ошибка: ' + error.message);
+    });
+    
+    $('#createProductModal').modal('hide');
+}
+</script>
+{% endblock %}

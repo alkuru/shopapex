@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgresql://shopapex:password@db:5432/shopapex
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+      - fastapi
+    volumes:
+      - E:/shopapex/static:/app/static
+      - E:/shopapex/staticfiles:/app/staticfiles
+      - E:/shopapex/media:/app/media
+      - E:/shopapex/templates:/app/templates
+
+  fastapi:
+    build:
+      context: ../fastapi_test
+    container_name: fastapi
+    command: uvicorn main:app --reload --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=shopapex
+      - POSTGRES_USER=shopapex
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A shopapex_project worker -l info
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=postgresql://shopapex:password@db:5432/shopapex
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - E:/shopapex/static:/app/static
+      - E:/shopapex/staticfiles:/app/staticfiles
+      - E:/shopapex/media:/app/media
+      - E:/shopapex/templates:/app/templates
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  media_volume:
+  static_volume:

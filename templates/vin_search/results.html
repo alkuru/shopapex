@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'vin_search_web:home' %}">Поиск по VIN</a></li>
+                    <li class="breadcrumb-item active">Результаты</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">{{ page_title }}</h1>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if vin_code %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-search"></i> VIN код: {{ vin_code }}
+                        </h5>
+                        
+                        {% if vin_info %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Марка:</strong> {{ vin_info.make|default:"Не указана" }}</p>
+                                    <p><strong>Модель:</strong> {{ vin_info.model|default:"Не указана" }}</p>
+                                    <p><strong>Год:</strong> {{ vin_info.year|default:"Не указан" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Двигатель:</strong> {{ vin_info.engine|default:"Не указан" }}</p>
+                                    <p><strong>Коробка передач:</strong> {{ vin_info.transmission|default:"Не указана" }}</p>
+                                    <p><strong>Привод:</strong> {{ vin_info.drive_type|default:"Не указан" }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                VIN код не найден в нашей базе данных. 
+                                {% if user.is_authenticated %}
+                                    Запрос на поиск отправлен нашим специалистам.
+                                {% else %}
+                                    <a href="/accounts/login/">Войдите в систему</a> для создания запроса на поиск.
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <a href="{% url 'vin_search_web:home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i> Новый поиск
+                        </a>
+                    </div>
+                </div>
+                
+                {% if products %}
+                    <h3>Найденные запчасти ({{ products.count }})</h3>
+                    <div class="row">
+                        {% for product in products %}
+                        <div class="col-md-4 col-lg-3 mb-4">
+                            <div class="card h-100">
+                                {% if product.image %}
+                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ product.name|truncatechars:50 }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ product.brand.name }}</small><br>
+                                        <small class="text-muted">Артикул: {{ product.article }}</small><br>
+                                        <strong class="text-primary">{{ product.price }} ₽</strong>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <a href="{% url 'catalog_web:product_detail' product.id %}" class="btn btn-sm btn-primary w-100">
+                                        Подробнее
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% elif vin_info %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Для данного автомобиля запчасти пока не добавлены в каталог. 
+                        Обратитесь к нашим менеджерам для подбора.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    VIN код не указан. <a href="{% url 'vin_search_web:home' %}">Вернуться к поиску</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

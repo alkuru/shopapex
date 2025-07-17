@@ -1,0 +1,139 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Сотрудники{% endblock %}
+
+{% block content %}
+<h1>{{ supplier.name }} - Сотрудники</h1>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Список сотрудников</h4>
+                <div class="float-end">
+                    <a href="{% url 'catalog_web:supplier_entities' supplier.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Назад к интеграции
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Фильтры -->
+                <form method="get" class="mb-3">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select name="active" class="form-select">
+                                <option value="">Все сотрудники</option>
+                                <option value="true" {% if is_active == 'true' %}selected{% endif %}>Только активные</option>
+                                <option value="false" {% if is_active == 'false' %}selected{% endif %}>Только неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Поиск по имени, email, телефону">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Поиск
+                            </button>
+                            <a href="{% url 'catalog_web:supplier_staff' supplier.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Сброс
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Таблица сотрудников -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Телефон</th>
+                                <th>Роль</th>
+                                <th>Статус</th>
+                                <th>Обновлен</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in page_obj %}
+                            <tr>
+                                <td>{{ staff.external_id }}</td>
+                                <td>
+                                    <strong>{{ staff.name }}</strong>
+                                </td>
+                                <td>
+                                    {% if staff.email %}
+                                        <a href="mailto:{{ staff.email }}">{{ staff.email }}</a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if staff.phone %}
+                                        <a href="tel:{{ staff.phone }}">{{ staff.phone }}</a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if staff.role %}
+                                        <span class="badge bg-info">{{ staff.role }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if staff.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ staff.updated_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="fas fa-inbox"></i> Сотрудники не найдены
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Пагинация">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if is_active %}&active={{ is_active }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    Предыдущая
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if is_active %}&active={{ is_active }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    Следующая
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

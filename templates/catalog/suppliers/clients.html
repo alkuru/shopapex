@@ -1,0 +1,177 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Клиенты{% endblock %}
+
+{% block content %}
+<h1>{{ supplier.name }} - Клиенты</h1>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>Список клиентов</h4>
+                <div class="float-end">
+                    <a href="{% url 'catalog_web:supplier_entities' supplier.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Назад к интеграции
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Фильтры -->
+                <form method="get" class="mb-3">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <select name="active" class="form-select">
+                                <option value="">Все клиенты</option>
+                                <option value="true" {% if is_active == 'true' %}selected{% endif %}>Только активные</option>
+                                <option value="false" {% if is_active == 'false' %}selected{% endif %}>Только неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="group" class="form-select">
+                                <option value="">Все группы</option>
+                                {% for group in groups %}
+                                <option value="{{ group.id }}" {% if group_id == group.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ group.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="manager" class="form-select">
+                                <option value="">Все менеджеры</option>
+                                {% for manager in managers %}
+                                <option value="{{ manager.id }}" {% if manager_id == manager.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ manager.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Поиск по имени, email, телефону">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Поиск
+                            </button>
+                            <a href="{% url 'catalog_web:supplier_clients' supplier.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Таблица клиентов -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя/Название</th>
+                                <th>Контакты</th>
+                                <th>Группа</th>
+                                <th>Менеджер</th>
+                                <th>Баланс</th>
+                                <th>Статус</th>
+                                <th>Обновлен</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in page_obj %}
+                            <tr>
+                                <td>{{ client.external_id }}</td>
+                                <td>
+                                    <strong>{{ client.name }}</strong>
+                                    {% if client.address %}
+                                        <br><small class="text-muted">{{ client.address|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.email %}
+                                        <div><a href="mailto:{{ client.email }}">{{ client.email }}</a></div>
+                                    {% endif %}
+                                    {% if client.phone %}
+                                        <div><a href="tel:{{ client.phone }}">{{ client.phone }}</a></div>
+                                    {% endif %}
+                                    {% if not client.email and not client.phone %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.group %}
+                                        <span class="badge bg-info">{{ client.group.name }}</span>
+                                        <br><small class="text-muted">{{ client.group.discount_percentage }}% скидка</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.manager %}
+                                        <span class="badge bg-secondary">{{ client.manager.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.balance > 0 %}
+                                        <span class="text-success">{{ client.balance }} ₽</span>
+                                    {% elif client.balance < 0 %}
+                                        <span class="text-danger">{{ client.balance }} ₽</span>
+                                    {% else %}
+                                        <span class="text-muted">0 ₽</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if client.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ client.updated_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    <i class="fas fa-inbox"></i> Клиенты не найдены
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Пагинация">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if is_active %}&active={{ is_active }}{% endif %}{% if group_id %}&group={{ group_id }}{% endif %}{% if manager_id %}&manager={{ manager_id }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    Предыдущая
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if is_active %}&active={{ is_active }}{% endif %}{% if group_id %}&group={{ group_id }}{% endif %}{% if manager_id %}&manager={{ manager_id }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    Следующая
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

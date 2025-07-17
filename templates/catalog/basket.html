@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Корзина{% endblock %}
+{% block content %}
+<div class="container my-4">
+    <h1>Корзина Автоконтинент</h1>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    {% if basket and basket|length > 0 %}
+        <table class="table table-bordered table-sm">
+            <thead>
+                <tr>
+                    <th>Артикул</th>
+                    <th>Наименование</th>
+                    <th>Бренд</th>
+                    <th>Склад</th>
+                    <th>Цена</th>
+                    <th>Кол-во</th>
+                    <th>Сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in basket %}
+                <tr>
+                    <td>{{ item.part_code }}</td>
+                    <td>{{ item.part_name }}</td>
+                    <td>{{ item.brand_name }}</td>
+                    <td>{{ item.warehouse_name }}</td>
+                    <td>{{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.price|floatformat:2|add:item.quantity|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">Корзина пуста.</div>
+    {% endif %}
+</div>
+{% endblock %}
