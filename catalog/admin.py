@@ -27,10 +27,11 @@ class BrandAdmin(admin.ModelAdmin):
 
 
 # Регистрация WarehouseSettings с корректными полями
-@admin.register(WarehouseSettings)
-class WarehouseSettingsAdmin(admin.ModelAdmin):
-    list_display = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
-    list_editable = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
+## @admin.register(WarehouseSettings)
+## class WarehouseSettingsAdmin(admin.ModelAdmin):
+##     list_display = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
+##     list_editable = ['show_spb_south', 'show_moscow', 'show_other']
+##     list_display_links = ['show_spb_north']
 
 # Регистрация Supplier
 @admin.register(Supplier)
