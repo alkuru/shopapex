@@ -640,7 +640,7 @@ class AdvancedSearchView(ListView):
     model = Product
     template_name = 'catalog/advanced_search.html'
     context_object_name = 'products'
-    paginate_by = 20
+    paginate_by = 30
     
     def get_queryset(self):
         queryset = Product.objects.filter(is_active=True).select_related('category', 'brand', 'primary_supplier')

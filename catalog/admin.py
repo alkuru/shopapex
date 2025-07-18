@@ -1,3 +1,4 @@
+
 from django.contrib import admin
 from django.utils.html import format_html
 from django.shortcuts import redirect
@@ -15,19 +16,23 @@ from .supplier_models import (
     SupplierClient, SupplierOrder, SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction
 )
 
+
+# Регистрация Brand
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active']
     search_fields = ['name']
     list_editable = ['is_active']
 
-# Регистрация WarehouseSettings в админке
+
+
+# Регистрация WarehouseSettings с корректными полями
 @admin.register(WarehouseSettings)
 class WarehouseSettingsAdmin(admin.ModelAdmin):
-    list_display = ['name', 'show_spb_north', 'show_spb_south', 'show_moscow', 'show_other', 'is_active']
-    search_fields = ['name']
-    list_editable = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other', 'is_active']
+    list_display = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
+    list_editable = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
 
+# Регистрация Supplier
 @admin.register(Supplier)
 class SupplierAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active']
@@ -396,59 +401,3 @@ class SupplierBalanceTransactionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-
-@admin.register(APIMonitorLog)
-class APIMonitorLogAdmin(admin.ModelAdmin):
-    list_display = ['supplier', 'method', 'status', 'response_time', 'checked_at']
-    list_filter = ['status', 'method', 'checked_at', 'supplier']
-    search_fields = ['supplier__name', 'method', 'error_message']
-    readonly_fields = ['checked_at']
-    date_hierarchy = 'checked_at'
-    
-    fieldsets = (
-        (None, {
-            'fields': ('supplier', 'method', 'status', 'response_time', 'checked_at')
-        }),
-        ('Данные запроса', {
-            'fields': ('request_data',),
-            'classes': ('collapse',)
-        }),
-        ('Данные ответа', {
-            'fields': ('response_data', 'error_message'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def has_add_permission(self, request):
-        return False  # Только для чтения
-
-
-@admin.register(APIHealthCheck)
-class APIHealthCheckAdmin(admin.ModelAdmin):
-    list_display = ['supplier', 'health_status', 'response_time', 'status_code', 'checked_at']
-    list_filter = ['is_available', 'checked_at']
-    search_fields = ['supplier__name']
-    readonly_fields = ['checked_at']
-    
-    def health_status(self, obj):
-        if obj.is_available:
-            return format_html('<span style="color: green;">🟢 Работает</span>')
-        else:
-            return format_html('<span style="color: red;">🔴 Не работает</span>')
-    health_status.short_description = 'Статус'
-    
-    fieldsets = (
-        (None, {
-            'fields': ('supplier', 'is_available', 'checked_at')
-        }),
-        ('Статистика', {
-            'fields': ('response_time', 'status_code')
-        }),
-        ('Ошибки', {
-            'fields': ('error_message',),
-            'classes': ('collapse',)
-        }),
-    )
-
-
