@@ -107,6 +107,8 @@
                     <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
                 {% if products %}
+
+
                 <div class="table-responsive">
                   <div class="custom-black-border">
                   <table class="table table-bordered align-middle table-sm bg-white mb-0">
@@ -115,27 +117,9 @@
                         <th>Товар / Запрошенный артикул</th>
                         <th>Описание</th>
                         <th>Наличие</th>
-                        <th>
-                          <a href="?q={{ query }}&sort=delivery_time{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.sort == 'delivery_time' and not request.GET.order %}&order=desc{% endif %}">
-                            Срок поставки
-                            {% if request.GET.sort == 'delivery_time' %}
-                              <i class="fas fa-sort-amount-{{ request.GET.order|default:'asc' }}"></i>
-                            {% else %}
-                              <i class="fas fa-sort text-muted"></i>
-                            {% endif %}
-                          </a>
-                        </th>
+                        <th>Срок поставки</th>
                         <th>Склад</th>
-                        <th>
-                          <a href="?q={{ query }}&sort=price{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.sort == 'price' and not request.GET.order %}&order=desc{% endif %}">
-                            Цена
-                            {% if request.GET.sort == 'price' %}
-                              <i class="fas fa-sort-amount-{{ request.GET.order|default:'asc' }}"></i>
-                            {% else %}
-                              <i class="fas fa-sort text-muted"></i>
-                            {% endif %}
-                          </a>
-                        </th>
+                        <th>Цена</th>
                         <th>Корзина</th>
                       </tr>
                     </thead>
@@ -177,7 +161,7 @@
     <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
     <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
     <td class="main-article-td">
-      <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.id }})">
+      <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
         <i class="fas fa-cart-plus"></i>
       </button>
     </td>
@@ -223,7 +207,7 @@
       <td>{{ product.warehouse|default:"-" }}</td>
       <td><strong>{{ product.price }} ₽</strong></td>
       <td>
-        <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.id }})">
+        <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
           <i class="fas fa-cart-plus"></i>
         </button>
       </td>
@@ -235,6 +219,7 @@
                   </table>
                   </div>
                 </div>
+
                     <!-- Пагинация -->
                     {% if products.has_other_pages %}
                     <nav aria-label="Пагинация поиска">

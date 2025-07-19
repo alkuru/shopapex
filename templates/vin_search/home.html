@@ -36,7 +36,7 @@ C:\Users\Professional\Desktop\shopapex\templates\vin_search
                                            maxlength="17"
                                            pattern="[A-HJ-NPR-Z0-9]{17}"
                                            title="VIN код должен содержать 17 символов (латинские буквы и цифры, кроме I, O, Q)"
-                                           value="{{ request.GET.vin }}"
+                                           value="{{ request.GET.vin|default:'' }}"
                                            required>
                                     <div class="form-text">
                                         Пример: WVWZZZ1JZXW386752

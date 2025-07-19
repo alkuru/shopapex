@@ -21,7 +21,7 @@
                         <form method="get" action="{% url 'catalog_web:search' %}" class="input-group input-group-lg">
                             <input type="text" name="q" class="form-control automotive-input" 
                                    placeholder="Введите артикул запчасти..." 
-                                   value="{{ request.GET.q }}">
+                                   value="{{ request.GET.q|default:'' }}">
                             <button class="btn automotive-button" type="submit">
                                 <i class="fas fa-search"></i> НАЙТИ
                             </button>

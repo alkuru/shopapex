@@ -19,6 +19,7 @@ services:
       - E:/shopapex/staticfiles:/app/staticfiles
       - E:/shopapex/media:/app/media
       - E:/shopapex/templates:/app/templates
+      - E:/shopapex:/app
 
   fastapi:
     build:

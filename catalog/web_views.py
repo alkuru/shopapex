@@ -16,6 +16,7 @@ from .models import (
 from .forms import AdvancedSearchForm, QuickSearchForm
 import requests
 from django.conf import settings
+import logging
 
 
 def catalog_home(request):
@@ -54,7 +55,7 @@ def category_detail(request, category_id):
     ).select_related('brand', 'category')
     
     # Пагинация
-    paginator = Paginator(products, 20)
+    paginator = Paginator(products, 30)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -108,14 +109,20 @@ def product_detail(request, product_id):
 
 
 def product_search(request):
+    
     # --- Импортируем карту брендов и флагов ---
     from catalog.brand_country_map import brand_country_iso
     """Поиск товаров по артикулу через FastAPI"""
+    import logging
+    import os
+    
     query = request.GET.get('q', '')
     sort = request.GET.get('sort')
     order = request.GET.get('order', 'asc')
     products = []
     error = None
+    products_before_filter = None
+    products_after_filter = None
     if query:
         try:
             resp = requests.get('http://host.docker.internal:8001/search', params={'article': query}, timeout=10)
@@ -124,6 +131,8 @@ def product_search(request):
                     data = resp.json()
                     if data.get('status') == 'ok':
                         products = data.get('data', [])
+                        products_before_filter = len(products)
+                        
                         # Прокидываем availability -> stock_quantity для шаблона
                         for p in products:
                             if 'availability' in p:
@@ -245,11 +254,14 @@ def product_search(request):
     # Приводим все элементы к dict, чтобы is_main_article был доступен в шаблоне
     # products уже приведён к dict выше
 
+    # Присваиваем количество товаров после фильтрации ДО пагинации
+    products_after_filter = len(products)
+    
     # Пагинация
     page_number = request.GET.get('page', 1)
-    from django.core.paginator import Paginator
-    paginator = Paginator(products, 20)
+    paginator = Paginator(products, 30)
     page_obj = paginator.get_page(page_number)
+    
     context = {
         'products': page_obj,
         'query': query,
@@ -257,6 +269,8 @@ def product_search(request):
         'page_title': 'Результаты поиска',
         'request': request,
         'brand_country_iso': brand_country_iso,
+        'products_before_filter': products_before_filter,
+        'products_after_filter': products_after_filter,
     }
     return render(request, 'catalog/search.html', context)
 
@@ -772,7 +786,7 @@ def advanced_search(request):
             total_api = sum(result['count'] for result in api_results)
     
     # Пагинация
-    paginator = Paginator(products, 20)
+    paginator = Paginator(products, 30)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
