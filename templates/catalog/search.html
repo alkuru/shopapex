@@ -135,21 +135,21 @@
                           <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
                           <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
                           <td class="main-article-td">
-                            <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
-                              <i class="fas fa-cart-plus"></i>
+                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({{ product.part_id|default:product.article }})">
+                              <i class="fas fa-cart-plus" style="font-size:14px;"></i>
                             </button>
+                            {% if offers.other and offers.other|length > 0 and offers.main|length > 0 and forloop.first %}
+                              <button id="show-all-{{ article }}-btn" class="btn btn-outline-secondary btn-sm" style="font-size:12px; padding:2px 6px; margin-left:4px;" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
+                                Ещё предложения ({{ offers.other|length }})
+                              </button>
+                            {% endif %}
                           </td>
                         </tr>
                       {% endfor %}
                       {# Кнопка и скрытый блок для остальных предложений #}
-                      {% if offers.other and offers.other|length > 0 %}
-                        <tr><td colspan="8" class="text-center">
-                          <button id="show-all-{{ article }}-btn" class="btn btn-outline-secondary" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
-                            Ещё предложения ({{ offers.other|length }})
-                          </button>
-                        </td></tr>
+                      {% if offers.main|length > 0 %}
                         <tbody id="all-offers-{{ article }}" style="display:none;">
-                          {% for product in offers.other %}
+                          {% for product in offers.other|dictsort:"price"|slice:":5" %}
                           <tr class="analog-row">
                             <td>{{ product.article }}</td>
                             <td>{{ product.brand }}</td>
@@ -159,8 +159,8 @@
                             <td>{{ product.warehouse|default:"-" }}</td>
                             <td><strong>{{ product.price }} ₽</strong></td>
                             <td>
-                              <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
-                                <i class="fas fa-cart-plus"></i>
+                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({{ product.part_id|default:product.article }})">
+                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
                               </button>
                             </td>
                           </tr>

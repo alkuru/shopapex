@@ -234,6 +234,13 @@ def product_search(request):
                 other_products.append(p)
         products = main_articles + other_products
 
+    # Приведение price к float для корректной сортировки в шаблоне
+    for p in products:
+        try:
+            p['price'] = float(p.get('price', 1e9))
+        except Exception:
+            p['price'] = 1e9
+
     main_warehouses = ['СПб Север', 'СПб Юг', 'Москва']
     offers_by_article = {}
     for p in products:
