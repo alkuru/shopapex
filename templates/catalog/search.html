@@ -124,49 +124,67 @@
                     </thead>
                     <tbody>
                     {% for article, offers in offers_by_article.items %}
-                      {# Основные склады #}
-                      {% for product in offers.main %}
-                        <tr class="main-article-row">
-                          <td class="main-article-td">{{ product.article }}</td>
-                          <td class="main-article-td">{{ product.brand }}</td>
-                          <td class="main-article-td">{{ product.description|default:"-"|truncatechars:60 }}</td>
-                          <td class="main-article-td">{{ product.availability }}</td>
-                          <td class="main-article-td">{{ product.delivery_time|default:"-" }}</td>
-                          <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
-                          <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
-                          <td class="main-article-td">
-                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({{ product.part_id|default:product.article }})">
-                              <i class="fas fa-cart-plus" style="font-size:14px;"></i>
-                            </button>
-                            {% if offers.other and offers.other|length > 0 and offers.main|length > 0 and forloop.first %}
-                              <button id="show-all-{{ article }}-btn" class="btn btn-outline-secondary btn-sm" style="font-size:12px; padding:2px 6px; margin-left:4px;" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
-                                Ещё предложения ({{ offers.other|length }})
-                              </button>
-                            {% endif %}
-                          </td>
-                        </tr>
-                      {% endfor %}
-                      {# Кнопка и скрытый блок для остальных предложений #}
-                      {% if offers.main|length > 0 %}
-                        <tbody id="all-offers-{{ article }}" style="display:none;">
-                          {% for product in offers.other|dictsort:"price"|slice:":5" %}
-                          <tr class="analog-row">
-                            <td>{{ product.article }}</td>
-                            <td>{{ product.brand }}</td>
-                            <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
-                            <td>{{ product.availability }}</td>
-                            <td>{{ product.delivery_time|default:"-" }}</td>
-                            <td>{{ product.warehouse|default:"-" }}</td>
-                            <td><strong>{{ product.price }} ₽</strong></td>
-                            <td>
-                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({{ product.part_id|default:product.article }})">
-                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
-                              </button>
-                            </td>
-                          </tr>
-                          {% endfor %}
-                        </tbody>
-                      {% endif %}
+                      {% with total_offers=offers.all|length %}
+                        <!-- DEBUG: Article: {{ article }}, Total: {{ total_offers }}, Display: {{ offers.display|length }}, Hidden: {{ offers.hidden|length }} -->
+                        {% for product in offers.display %}
+                          {% if forloop.first %}
+                            <tr class="main-article-row">
+                              <td class="main-article-td">{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.brand_name|default:product.brand|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
+                              <td class="main-article-td">{{ product.quantity|default:product.availability|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td class="main-article-td"><strong>{{ product.price|default:"-" }} ₽</strong></td>
+                              <td class="main-article-td">
+                                <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
+                                  <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                                </button>
+                                {% if total_offers > 5 %}
+                                  <button id="show-all-{{ article }}-btn" class="btn btn-danger btn-sm" style="font-size:12px; padding:4px 8px; margin-left:4px; background: red !important; color: white !important;" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
+                                    Еще предложения ({{ total_offers|add:'-5' }})
+                                  </button>
+                                {% endif %}
+                              </td>
+                            </tr>
+                          {% else %}
+                            <tr class="analog-row">
+                              <td>{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
+                              <td>{{ product.brand_name|default:product.brand|default:"-" }}</td>
+                              <td>{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
+                              <td>{{ product.quantity|default:product.availability|default:"-" }}</td>
+                              <td>{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
+                              <td>{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td><strong>{{ product.price|default:"-" }} ₽</strong></td>
+                              <td>
+                                <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
+                                  <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          {% endif %}
+                        {% endfor %}
+                        {% if total_offers > 5 %}
+                          <tbody id="all-offers-{{ article }}" style="display:none;">
+                            {% for product in offers.hidden %}
+                            <tr class="analog-row">
+                              <td>{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
+                              <td>{{ product.brand_name|default:product.brand|default:"-" }}</td>
+                              <td>{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
+                              <td>{{ product.quantity|default:product.availability|default:"-" }}</td>
+                              <td>{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
+                              <td>{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td><strong>{{ product.price|default:"-" }} ₽</strong></td>
+                              <td>
+                                <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
+                                  <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                                </button>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        {% endif %}
+                      {% endwith %}
                     {% endfor %}
                     </tbody>
                   </table>

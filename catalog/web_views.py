@@ -249,14 +249,29 @@ def product_search(request):
         if not article:
             continue
         if article not in offers_by_article:
-            offers_by_article[article] = {'main': [], 'other': []}
+            offers_by_article[article] = {'main': [], 'other': [], 'all': []}
         if wh in main_warehouses:
             offers_by_article[article]['main'].append(p)
         else:
             offers_by_article[article]['other'].append(p)
+        offers_by_article[article]['all'].append(p)
+    
+    # Сортируем все предложения по цене и ограничиваем до 5 для отображения
+    for article in offers_by_article:
+        # Сортируем все предложения по цене (от меньшей к большей)
+        offers_by_article[article]['all'].sort(key=lambda x: float(x.get('price', 1e9)))
+        
+        # Берем только первые 5 для отображения
+        offers_by_article[article]['display'] = offers_by_article[article]['all'][:5]
+        
+        # Остальные для кнопки "Ещё предложения"
+        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][5:]
 
     print('DEBUG: offers_by_article keys count:', len(offers_by_article))
     print('DEBUG: first 3 articles:', list(offers_by_article.keys())[:3])
+    for article, offers in offers_by_article.items():
+        total = len(offers['main']) + len(offers['other'])
+        print(f'DEBUG: Article {article}: main={len(offers["main"])}, other={len(offers["other"])}, total={total}')
 
     context = {
         'offers_by_article': offers_by_article,
