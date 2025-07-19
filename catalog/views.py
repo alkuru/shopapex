@@ -101,9 +101,6 @@ class ProductSearchView(generics.ListAPIView):
     serializer_class = ProductSerializer
     
     def get_queryset(self):
-        import logging
-        logging.warning("🔥🔥🔥 PRODUCTSEARCHVIEW ВЫЗВАН - API VIEW 🔥🔥🔥")
-        
         query = self.request.query_params.get('q', '')
         if not query:
             return Product.objects.none()

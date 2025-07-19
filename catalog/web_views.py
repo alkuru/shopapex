@@ -16,7 +16,6 @@ from .models import (
 from .forms import AdvancedSearchForm, QuickSearchForm
 import requests
 from django.conf import settings
-import logging
 
 
 def catalog_home(request):
@@ -109,20 +108,14 @@ def product_detail(request, product_id):
 
 
 def product_search(request):
-    
     # --- Импортируем карту брендов и флагов ---
     from catalog.brand_country_map import brand_country_iso
     """Поиск товаров по артикулу через FastAPI"""
-    import logging
-    import os
-    
     query = request.GET.get('q', '')
     sort = request.GET.get('sort')
     order = request.GET.get('order', 'asc')
     products = []
     error = None
-    products_before_filter = None
-    products_after_filter = None
     if query:
         try:
             resp = requests.get('http://host.docker.internal:8001/search', params={'article': query}, timeout=10)
@@ -131,16 +124,12 @@ def product_search(request):
                     data = resp.json()
                     if data.get('status') == 'ok':
                         products = data.get('data', [])
-                        products_before_filter = len(products)
-                        
-                        # Прокидываем availability -> stock_quantity для шаблона
                         for p in products:
                             if 'availability' in p:
                                 try:
                                     p['stock_quantity'] = int(p['availability'])
                                 except Exception:
                                     p['stock_quantity'] = 0
-                        # --- ФИЛЬТРАЦИЯ ПО СКЛАДАМ ---
                         from catalog.models import WarehouseSettings
                         ws = WarehouseSettings.objects.first()
                         if ws:
@@ -163,8 +152,6 @@ def product_search(request):
                                     if wh in allowed_warehouses:
                                         filtered.append(p)
                             products = filtered
-                        # --- КОНЕЦ ФИЛЬТРАЦИИ ---
-                        # --- ДОБАВЛЯЕМ SupplierProduct в результаты поиска ВНЕ зависимости от FastAPI ---
                         if query:
                             from catalog.supplier_models import Supplier, SupplierProduct
                             try:
@@ -197,9 +184,7 @@ def product_search(request):
         except Exception as e:
             error = f"Ошибка запроса к FastAPI: {str(e)}"
 
-    # Сортировка по сроку поставки и цене (локально по списку)
     def parse_delivery_time(val):
-        # Пример: "Завтра до 12:00" или "14.07.2025"
         import datetime, re
         if not val:
             return datetime.datetime.max
@@ -223,14 +208,12 @@ def product_search(request):
                 return float('inf')
         products = sorted(products, key=lambda x: parse_price(x.get('price')), reverse=(order=='desc'))
 
-    # --- Артикул поиска всегда первым и помечаем его ---
     if query:
         query_lower = query.strip().lower().replace(' ', '').replace('+', '')
         main_articles = []
         other_products = []
         new_products = []
         for p in products:
-            # Приводим к dict, если это не dict
             if not isinstance(p, dict):
                 p = {
                     'article': getattr(p, 'article', ''),
@@ -251,26 +234,30 @@ def product_search(request):
                 other_products.append(p)
         products = main_articles + other_products
 
-    # Приводим все элементы к dict, чтобы is_main_article был доступен в шаблоне
-    # products уже приведён к dict выше
+    main_warehouses = ['СПб Север', 'СПб Юг', 'Москва']
+    offers_by_article = {}
+    for p in products:
+        article = p.get('article', '').strip()
+        wh = (p.get('warehouse') or '').strip()
+        if not article:
+            continue
+        if article not in offers_by_article:
+            offers_by_article[article] = {'main': [], 'other': []}
+        if wh in main_warehouses:
+            offers_by_article[article]['main'].append(p)
+        else:
+            offers_by_article[article]['other'].append(p)
 
-    # Присваиваем количество товаров после фильтрации ДО пагинации
-    products_after_filter = len(products)
-    
-    # Пагинация
-    page_number = request.GET.get('page', 1)
-    paginator = Paginator(products, 30)
-    page_obj = paginator.get_page(page_number)
-    
+    print('DEBUG: offers_by_article keys count:', len(offers_by_article))
+    print('DEBUG: first 3 articles:', list(offers_by_article.keys())[:3])
+
     context = {
-        'products': page_obj,
+        'offers_by_article': offers_by_article,
         'query': query,
         'error': error,
         'page_title': 'Результаты поиска',
         'request': request,
         'brand_country_iso': brand_country_iso,
-        'products_before_filter': products_before_filter,
-        'products_after_filter': products_after_filter,
     }
     return render(request, 'catalog/search.html', context)
 
@@ -786,7 +773,7 @@ def advanced_search(request):
             total_api = sum(result['count'] for result in api_results)
     
     # Пагинация
-    paginator = Paginator(products, 30)
+    paginator = Paginator(products, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     

@@ -27,11 +27,24 @@ class BrandAdmin(admin.ModelAdmin):
 
 
 # Регистрация WarehouseSettings с корректными полями
-## @admin.register(WarehouseSettings)
-## class WarehouseSettingsAdmin(admin.ModelAdmin):
-##     list_display = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
-##     list_editable = ['show_spb_south', 'show_moscow', 'show_other']
-##     list_display_links = ['show_spb_north']
+@admin.register(WarehouseSettings)
+class WarehouseSettingsAdmin(admin.ModelAdmin):
+    list_display = ['show_spb_north', 'show_spb_south', 'show_moscow', 'show_other']
+    
+    fieldsets = (
+        ('Настройки складов', {
+            'fields': ('show_spb_north', 'show_spb_south', 'show_moscow', 'show_other'),
+            'description': 'Выберите склады, которые должны отображаться в поиске товаров'
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Разрешаем создание только одной записи
+        return not WarehouseSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Запрещаем удаление
+        return False
 
 # Регистрация Supplier
 @admin.register(Supplier)
@@ -39,6 +52,20 @@ class SupplierAdmin(admin.ModelAdmin):
     list_display = ['name', 'is_active']
     search_fields = ['name']
     list_editable = ['is_active']
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'description', 'is_active')
+        }),
+        ('API настройки', {
+            'fields': ('api_type', 'api_url', 'api_login', 'api_password', 'api_token', 'office_id'),
+            'classes': ('collapse',)
+        }),
+        ('Дополнительно', {
+            'fields': ('use_online_stocks', 'sync_frequency', 'contact_person', 'email', 'phone', 'website', 'default_shipment_address', 'admin_login', 'admin_password', 'data_format', 'markup_percentage', 'auto_activate_products'),
+            'classes': ('collapse',)
+        }),
+    )
 
 @admin.register(SupplierProduct)
 class SupplierProductAdmin(admin.ModelAdmin):

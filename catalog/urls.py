@@ -23,7 +23,7 @@ router.register(r'supplier-balance-transactions', views.SupplierBalanceTransacti
 
 urlpatterns = [
     path('', include(router.urls)),
-    # path('search/', views.ProductSearchView.as_view(), name='product_search'),
+    path('search/', views.ProductSearchView.as_view(), name='product_search'),
     path('advanced-search/', views.AdvancedSearchView.as_view(), name='advanced_search'),
     path('quick-search/', views.quick_search_view, name='quick_search'),
     path('supplier-api-search/', views.supplier_api_search_view, name='supplier_api_search'),

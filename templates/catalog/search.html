@@ -84,8 +84,8 @@
                 <h1 class="mb-4" style="font-size:1.2rem; font-weight:normal;">
                   <span class="alert alert-info d-inline-block mb-0 w-100" style="border:none;background:#F5F5DC;color:#222;padding:0.5em 1em; font-size:1rem; max-width: 480px; min-width: 260px; width: 100%; box-sizing: border-box;">
                     <i class="fas fa-search"></i> Результаты поиска по артикулу: "<strong>{{ query }}</strong>"
-                    {% if products %}
-                        (найдено товаров: {{ products.paginator.count }})
+                    {% if offers_by_article %}
+                        (найдено товаров: {{ offers_by_article|length }})
                     {% endif %}
                   </span>
                 </h1>
@@ -106,15 +106,14 @@
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
-                {% if products %}
-
-
+                {% if offers_by_article %}
                 <div class="table-responsive">
                   <div class="custom-black-border">
                   <table class="table table-bordered align-middle table-sm bg-white mb-0">
                     <thead class="table-light">
                       <tr>
-                        <th>Товар / Запрошенный артикул</th>
+                        <th>Артикул</th>
+                        <th>Бренд</th>
                         <th>Описание</th>
                         <th>Наличие</th>
                         <th>Срок поставки</th>
@@ -124,130 +123,55 @@
                       </tr>
                     </thead>
                     <tbody>
-{# --- Основной артикул --- #}
-{% for product in products %}
-  {% if product.is_main_article|stringformat:'s' == 'True' %}
-  <tr class="main-article-row">
-    <td class="main-article-td">
-      <div style="display: flex; align-items: center; gap: 0.5em;">
-        {% with iso=product.brand|brand_flag %}
-          {% if iso %}
-            <span style="min-width: 24px; display: inline-block;">
-              <img src="https://flagcdn.com/{{ iso }}.svg" width="24" height="18" alt="flag" style="display: block; border-radius: 3px;" title="{{ iso|upper }}">
-            </span>
-          {% else %}
-            <span style="min-width: 24px; display: inline-block;"></span>
-          {% endif %}
-        {% endwith %}
-        <strong>{{ product.article }}</strong>
-        {% if product.brand %} <span class="text-muted">{{ product.brand }}</span>{% endif %}
-      </div>
-    </td>
-    <td class="main-article-td">{{ product.description|default:"-"|truncatechars:60 }}</td>
-    <td class="main-article-td">
-      {% if product.stock_quantity is not None %}
-        {% if product.stock_quantity > 10 %}
-          > 10 шт.
-        {% elif product.stock_quantity > 0 %}
-          {{ product.stock_quantity }} шт.
-        {% else %}
-          <span class="text-danger">0</span>
-        {% endif %}
-      {% else %}
-        —
-      {% endif %}
-    </td>
-    <td class="main-article-td">{{ product.delivery_time|default:"-" }}</td>
-    <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
-    <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
-    <td class="main-article-td">
-      <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
-        <i class="fas fa-cart-plus"></i>
-      </button>
-    </td>
-  </tr>
-  {% endif %}
-{% endfor %}
-{# --- Аналоги --- #}
-{% if products|length > 1 %}
-  <tr class="analogs-label-row"><td colspan="7">Аналоги</td></tr>
-  {% for product in products %}
-    {% if not product.is_main_article or product.is_main_article|stringformat:'s' != 'True' %}
-    <tr class="analog-row">
-      <td>
-        <div style="display: flex; align-items: center; gap: 0.5em;">
-          {% with iso=product.brand|brand_flag %}
-            {% if iso %}
-              <span style="min-width: 24px; display: inline-block;">
-                <img src="https://flagcdn.com/{{ iso }}.svg" width="24" height="18" alt="flag" style="display: block; border-radius: 3px;" title="{{ iso|upper }}">
-              </span>
-            {% else %}
-              <span style="min-width: 24px; display: inline-block;"></span>
-            {% endif %}
-          {% endwith %}
-          <strong>{{ product.article }}</strong>
-          {% if product.brand %} <span class="text-muted">{{ product.brand }}</span>{% endif %}
-        </div>
-      </td>
-      <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
-      <td>
-        {% if product.stock_quantity is not None %}
-          {% if product.stock_quantity > 10 %}
-            > 10 шт.
-          {% elif product.stock_quantity > 0 %}
-            {{ product.stock_quantity }} шт.
-          {% else %}
-            <span class="text-danger">0</span>
-          {% endif %}
-        {% else %}
-          —
-        {% endif %}
-      </td>
-      <td>{{ product.delivery_time|default:"-" }}</td>
-      <td>{{ product.warehouse|default:"-" }}</td>
-      <td><strong>{{ product.price }} ₽</strong></td>
-      <td>
-        <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
-          <i class="fas fa-cart-plus"></i>
-        </button>
-      </td>
-    </tr>
-    {% endif %}
-  {% endfor %}
-{% endif %}
+                    {% for article, offers in offers_by_article.items %}
+                      {# Основные склады #}
+                      {% for product in offers.main %}
+                        <tr class="main-article-row">
+                          <td class="main-article-td">{{ product.article }}</td>
+                          <td class="main-article-td">{{ product.brand }}</td>
+                          <td class="main-article-td">{{ product.description|default:"-"|truncatechars:60 }}</td>
+                          <td class="main-article-td">{{ product.availability }}</td>
+                          <td class="main-article-td">{{ product.delivery_time|default:"-" }}</td>
+                          <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
+                          <td class="main-article-td"><strong>{{ product.price }} ₽</strong></td>
+                          <td class="main-article-td">
+                            <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
+                              <i class="fas fa-cart-plus"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                      {# Кнопка и скрытый блок для остальных предложений #}
+                      {% if offers.other and offers.other|length > 0 %}
+                        <tr><td colspan="8" class="text-center">
+                          <button id="show-all-{{ article }}-btn" class="btn btn-outline-secondary" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
+                            Ещё предложения ({{ offers.other|length }})
+                          </button>
+                        </td></tr>
+                        <tbody id="all-offers-{{ article }}" style="display:none;">
+                          {% for product in offers.other %}
+                          <tr class="analog-row">
+                            <td>{{ product.article }}</td>
+                            <td>{{ product.brand }}</td>
+                            <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
+                            <td>{{ product.availability }}</td>
+                            <td>{{ product.delivery_time|default:"-" }}</td>
+                            <td>{{ product.warehouse|default:"-" }}</td>
+                            <td><strong>{{ product.price }} ₽</strong></td>
+                            <td>
+                              <button class="btn btn-sm btn-primary w-100 cart-btn-custom" onclick="addToCart({{ product.part_id|default:product.article }})">
+                                <i class="fas fa-cart-plus"></i>
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      {% endif %}
+                    {% endfor %}
                     </tbody>
                   </table>
                   </div>
                 </div>
-
-                    <!-- Пагинация -->
-                    {% if products.has_other_pages %}
-                    <nav aria-label="Пагинация поиска">
-                        <ul class="pagination justify-content-center">
-                            {% if products.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?q={{ query }}&page=1">Первая</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?q={{ query }}&page={{ products.previous_page_number }}">Предыдущая</a>
-                                </li>
-                            {% endif %}
-                            <li class="page-item active">
-                                <span class="page-link">
-                                    Страница {{ products.number }} из {{ products.paginator.num_pages }}
-                                </span>
-                            </li>
-                            {% if products.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?q={{ query }}&page={{ products.next_page_number }}">Следующая</a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?q={{ query }}&page={{ products.paginator.num_pages }}">Последняя</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                    {% endif %}
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-search fa-5x text-muted mb-3"></i>
