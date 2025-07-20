@@ -117,72 +117,86 @@ def product_search(request):
     products = []
     error = None
     if query:
-        try:
-            resp = requests.get('http://host.docker.internal:8001/search', params={'article': query}, timeout=10)
-            if resp.status_code == 200:
-                try:
-                    data = resp.json()
-                    if data.get('status') == 'ok':
-                        products = data.get('data', [])
-                        for p in products:
-                            if 'availability' in p:
-                                try:
-                                    p['stock_quantity'] = int(p['availability'])
-                                except Exception:
-                                    p['stock_quantity'] = 0
-                        from catalog.models import WarehouseSettings
-                        ws = WarehouseSettings.objects.first()
-                        if ws:
-                            allowed_warehouses = []
-                            if ws.show_spb_north:
-                                allowed_warehouses.append('СПб Север')
-                            if ws.show_spb_south:
-                                allowed_warehouses.append('СПб Юг')
-                            if ws.show_moscow:
-                                allowed_warehouses.append('Москва')
-                            filtered = []
-                            if ws.show_other:
-                                for p in products:
-                                    wh = (p.get('warehouse') or '').strip()
-                                    if wh in allowed_warehouses or wh not in ['СПб Север', 'СПб Юг', 'Москва'] or wh == '':
-                                        filtered.append(p)
-                            else:
-                                for p in products:
-                                    wh = (p.get('warehouse') or '').strip()
-                                    if wh in allowed_warehouses:
-                                        filtered.append(p)
-                            products = filtered
-                        if query:
-                            from catalog.supplier_models import Supplier, SupplierProduct
+        # Проверяем, нужно ли использовать тестовые данные для демонстрации
+        use_test_data = request.GET.get('test', '').lower() == 'true'
+        
+        if use_test_data:
+            # Используем тестовые данные для демонстрации логики
+            try:
+                resp = requests.get('http://fastapi:8001/test_search', params={'article': query}, timeout=10)
+            except Exception as e:
+                error = f"Ошибка запроса к тестовому API: {str(e)}"
+                resp = None
+        else:
+            # Используем реальные данные
+            try:
+                resp = requests.get('http://fastapi:8001/search', params={'article': query}, timeout=10)
+            except Exception as e:
+                error = f"Ошибка запроса к FastAPI: {str(e)}"
+                resp = None
+        
+        if resp and resp.status_code == 200:
+            try:
+                data = resp.json()
+                if data.get('status') == 'ok':
+                    products = data.get('data', [])
+                    for p in products:
+                        if 'availability' in p:
                             try:
-                                supplier = Supplier.objects.get(name="auto-sputnik.ru")
-                                supplier_products = SupplierProduct.objects.filter(
-                                    supplier=supplier,
-                                    is_active=True,
-                                    article__iexact=query
-                                )
-                                for sp in supplier_products:
-                                    products.append({
-                                        'name': sp.name,
-                                        'article': sp.article,
-                                        'brand': sp.brand,
-                                        'description': sp.name,
-                                        'stock_quantity': sp.availability,
-                                        'delivery_time': sp.delivery_time or '1-2 дня',
-                                        'warehouse': 'Авто-Сп',
-                                        'price': sp.price,
-                                        'supplier': supplier.name,
-                                    })
-                            except Supplier.DoesNotExist:
-                                pass
-                    else:
-                        error = data.get('message', 'Ошибка поиска')
-                except Exception as e:
-                    error = f"Ошибка разбора ответа от FastAPI: {str(e)}\nТекст ответа: {resp.text}"
-            else:
-                error = f"Ошибка FastAPI: код {resp.status_code}"
-        except Exception as e:
-            error = f"Ошибка запроса к FastAPI: {str(e)}"
+                                p['stock_quantity'] = int(p['availability'])
+                            except Exception:
+                                p['stock_quantity'] = 0
+                    from catalog.models import WarehouseSettings
+                    ws = WarehouseSettings.objects.first()
+                    if ws:
+                        allowed_warehouses = []
+                        if ws.show_spb_north:
+                            allowed_warehouses.append('СПб Север')
+                        if ws.show_spb_south:
+                            allowed_warehouses.append('СПб Юг')
+                        if ws.show_moscow:
+                            allowed_warehouses.append('Москва')
+                        filtered = []
+                        if ws.show_other:
+                            for p in products:
+                                wh = (p.get('warehouse') or '').strip()
+                                if wh in allowed_warehouses or wh not in ['СПб Север', 'СПб Юг', 'Москва'] or wh == '':
+                                    filtered.append(p)
+                        else:
+                            for p in products:
+                                wh = (p.get('warehouse') or '').strip()
+                                if wh in allowed_warehouses:
+                                    filtered.append(p)
+                        products = filtered
+                    if query:
+                        from catalog.supplier_models import Supplier, SupplierProduct
+                        try:
+                            supplier = Supplier.objects.get(name="auto-sputnik.ru")
+                            supplier_products = SupplierProduct.objects.filter(
+                                supplier=supplier,
+                                is_active=True,
+                                article__iexact=query
+                            )
+                            for sp in supplier_products:
+                                products.append({
+                                    'name': sp.name,
+                                    'article': sp.article,
+                                    'brand': sp.brand,
+                                    'description': sp.name,
+                                    'stock_quantity': sp.availability,
+                                    'delivery_time': sp.delivery_time or '1-2 дня',
+                                    'warehouse': 'Авто-Сп',
+                                    'price': sp.price,
+                                    'supplier': supplier.name,
+                                })
+                        except Supplier.DoesNotExist:
+                            pass
+                else:
+                    error = data.get('message', 'Ошибка поиска')
+            except Exception as e:
+                error = f"Ошибка разбора ответа от FastAPI: {str(e)}\nТекст ответа: {resp.text}"
+        elif resp:
+            error = f"Ошибка FastAPI: код {resp.status_code}"
 
     def parse_delivery_time(val):
         import datetime, re
@@ -232,6 +246,7 @@ def product_search(request):
             else:
                 p['is_main_article'] = False
                 other_products.append(p)
+        # Добавляем аналоги в конец списка
         products = main_articles + other_products
 
     # Приведение price к float для корректной сортировки в шаблоне
@@ -256,23 +271,37 @@ def product_search(request):
             offers_by_article[article]['other'].append(p)
         offers_by_article[article]['all'].append(p)
     
-    # Сортируем все предложения по цене и ограничиваем до 5 для отображения
+    # Сортируем все предложения по приоритету складов и цене (как в Автоконтиненте)
+    warehouse_priority = {
+        'СПб Север': 1,
+        'СПб Юг': 2, 
+        'Москва': 3
+    }
+    
     for article in offers_by_article:
-        # Сортируем все предложения по цене (от меньшей к большей)
-        offers_by_article[article]['all'].sort(key=lambda x: float(x.get('price', 1e9)))
+        # Сортируем по приоритету складов, затем по цене
+        offers_by_article[article]['all'].sort(key=lambda x: (
+            warehouse_priority.get(x.get('warehouse', ''), 999),  # Приоритет склада
+            float(x.get('price', 1e9))  # Цена
+        ))
         
-        # Берем только первые 5 для отображения
-        offers_by_article[article]['display'] = offers_by_article[article]['all'][:5]
+        # Берем только первые 3 для отображения (как в Автоконтиненте)
+        offers_by_article[article]['display'] = offers_by_article[article]['all'][:3]
         
         # Остальные для кнопки "Ещё предложения"
-        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][5:]
+        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][3:]
 
     print('DEBUG: offers_by_article keys count:', len(offers_by_article))
     print('DEBUG: first 3 articles:', list(offers_by_article.keys())[:3])
     for article, offers in offers_by_article.items():
-        total = len(offers['main']) + len(offers['other'])
-        print(f'DEBUG: Article {article}: main={len(offers["main"])}, other={len(offers["other"])}, total={total}')
+        print(f'DEBUG: Article {article}: display={len(offers.get("display", []))}, hidden={len(offers.get("hidden", []))}, all={len(offers.get("all", []))}')
+        print(f'DEBUG: Article {article} display keys: {list(offers.keys())}')
 
+    # Отладочная информация
+    print(f"DEBUG: query = '{query}'")
+    print(f"DEBUG: offers_by_article keys = {list(offers_by_article.keys()) if offers_by_article else 'None'}")
+    print(f"DEBUG: request.GET = {dict(request.GET)}")
+    
     context = {
         'offers_by_article': offers_by_article,
         'query': query,

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+  .search-page-card {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+  }
+  .search-page-card:hover {
+    border-color: #F08080;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  .search-page-card h5 {
+    color: #333;
+    margin-bottom: 10px;
+  }
+  .search-page-card .article-code {
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
+    color: #495057;
+  }
+  .search-page-card .btn {
+    background: #F08080;
+    border-color: #F08080;
+    color: white;
+  }
+  .search-page-card .btn:hover {
+    background: #e06666;
+    border-color: #e06666;
+  }
+</style>
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'catalog_web:home' %}">Каталог</a></li>
+                    <li class="breadcrumb-item active">Все страницы поиска</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">
+                <span class="alert alert-info d-inline-block mb-0 w-100" style="border:none;background:#F5F5DC;color:#222;padding:0.5em 1em; font-size:1.2rem;">
+                    <i class="fas fa-search"></i> Все страницы поиска
+                </span>
+            </h1>
+            
+            <div class="row">
+                {% for page in search_pages %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="search-page-card">
+                        <h5>{{ page.name }}</h5>
+                        <p class="text-muted mb-3">
+                            {{ page.description }}
+                        </p>
+                        <a href="{% url page.url %}" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt"></i> Открыть страницу
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4">
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-info-circle"></i> Информация</h5>
+                    <p class="mb-0">
+                        Каждая страница поиска загружает товары по определенному артикулу и его аналогам. 
+                        Это позволяет загрузить больше товаров (до 300 вместо 50-157 на одной странице).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -87,6 +87,9 @@
                     {% if offers_by_article %}
                         (найдено товаров: {{ offers_by_article|length }})
                     {% endif %}
+                    {% if request.GET.test == 'true' %}
+                        <br><small class="text-warning"><i class="fas fa-flask"></i> Используются тестовые данные для демонстрации</small>
+                    {% endif %}
                   </span>
                 </h1>
             {% else %}
@@ -100,7 +103,27 @@
                         <button type="submit" class="btn btn-primary search-btn-custom">
                             <i class="fas fa-search"></i> Найти
                         </button>
+                        {% if query %}
+                            <a href="?q={{ query }}&test=true" class="btn btn-warning ms-2">
+                                <i class="fas fa-flask"></i> Тестовые данные
+                            </a>
+                        {% endif %}
+                        {% if request.GET.test == 'true' and query %}
+                            <a href="?q={{ query }}" class="btn btn-info ms-2">
+                                <i class="fas fa-database"></i> Реальные данные
+                            </a>
+                        {% endif %}
                     </form>
+                </div>
+            </div>
+            
+            <!-- Отладочная информация -->
+            <div class="row mb-2">
+                <div class="col-md-12">
+                    <small class="text-muted">
+                        DEBUG: query="{{ query }}", test="{{ request.GET.test }}", 
+                        offers_count="{{ offers_by_article|length }}"
+                    </small>
                 </div>
             </div>
                 {% if error %}
@@ -129,18 +152,18 @@
                         {% for product in offers.display %}
                           {% if forloop.first %}
                             <tr class="main-article-row">
-                              <td class="main-article-td">{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
-                              <td class="main-article-td">{{ product.brand_name|default:product.brand|default:"-" }}</td>
-                              <td class="main-article-td">{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
-                              <td class="main-article-td">{{ product.quantity|default:product.availability|default:"-" }}</td>
-                              <td class="main-article-td">{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
-                              <td class="main-article-td">{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.article|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.brand|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.description|default:"-"|truncatechars:60 }}</td>
+                              <td class="main-article-td">{{ product.availability|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.delivery_time|default:"-" }}</td>
+                              <td class="main-article-td">{{ product.warehouse|default:"-" }}</td>
                               <td class="main-article-td"><strong>{{ product.price|default:"-" }} ₽</strong></td>
                               <td class="main-article-td">
                                 <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
                                   <i class="fas fa-cart-plus" style="font-size:14px;"></i>
                                 </button>
-                                {% if product.warehouse_name|default:product.warehouse|default:"" in "СПб Север,СПб Юг" and offers.hidden|length > 0 %}
+                                {% if product.warehouse|default:"" in "СПб Север,СПб Юг" and offers.hidden|length > 0 %}
                                   <button id="show-all-{{ article }}-btn" class="btn btn-danger btn-sm" style="font-size:12px; padding:4px 8px; margin-left:4px; background: red !important; color: white !important;" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
                                     Еще предложения ({{ offers.hidden|length }})
                                   </button>
@@ -149,18 +172,18 @@
                             </tr>
                           {% else %}
                             <tr class="analog-row">
-                              <td>{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
-                              <td>{{ product.brand_name|default:product.brand|default:"-" }}</td>
-                              <td>{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
-                              <td>{{ product.quantity|default:product.availability|default:"-" }}</td>
-                              <td>{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
-                              <td>{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td>{{ product.article|default:"-" }}</td>
+                              <td>{{ product.brand|default:"-" }}</td>
+                              <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
+                              <td>{{ product.availability|default:"-" }}</td>
+                              <td>{{ product.delivery_time|default:"-" }}</td>
+                              <td>{{ product.warehouse|default:"-" }}</td>
                               <td><strong>{{ product.price|default:"-" }} ₽</strong></td>
                               <td>
                                 <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
                                   <i class="fas fa-cart-plus" style="font-size:14px;"></i>
                                 </button>
-                                {% if product.warehouse_name|default:product.warehouse|default:"" in "СПб Север,СПб Юг" and offers.hidden|length > 0 %}
+                                {% if product.warehouse|default:"" in "СПб Север,СПб Юг" and offers.hidden|length > 0 %}
                                   <button id="show-all-{{ article }}-btn-{{ forloop.counter }}" class="btn btn-danger btn-sm" style="font-size:12px; padding:4px 8px; margin-left:4px; background: red !important; color: white !important;" onclick="document.getElementById('all-offers-{{ article }}').style.display=''; this.style.display='none';">
                                     Еще предложения ({{ offers.hidden|length }})
                                   </button>
@@ -169,16 +192,16 @@
                             </tr>
                           {% endif %}
                         {% endfor %}
-                        {% if total_offers > 5 %}
+                        {% if total_offers > 3 %}
                           <tbody id="all-offers-{{ article }}" style="display:none;">
                             {% for product in offers.hidden %}
                             <tr class="analog-row">
-                              <td>{{ product.part_code|default:product.article|default:product.part_id|default:"-" }}</td>
-                              <td>{{ product.brand_name|default:product.brand|default:"-" }}</td>
-                              <td>{{ product.part_name|default:product.description|default:"-"|truncatechars:60 }}</td>
-                              <td>{{ product.quantity|default:product.availability|default:"-" }}</td>
-                              <td>{{ product.dt_delivery|default:product.delivery_time|default:"-" }}</td>
-                              <td>{{ product.warehouse_name|default:product.warehouse|default:"-" }}</td>
+                              <td>{{ product.article|default:"-" }}</td>
+                              <td>{{ product.brand|default:"-" }}</td>
+                              <td>{{ product.description|default:"-"|truncatechars:60 }}</td>
+                              <td>{{ product.availability|default:"-" }}</td>
+                              <td>{{ product.delivery_time|default:"-" }}</td>
+                              <td>{{ product.warehouse|default:"-" }}</td>
                               <td><strong>{{ product.price|default:"-" }} ₽</strong></td>
                               <td>
                                 <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart({% if product.part_id %}{{ product.part_id }}{% elif product.part_code %}{{ product.part_code }}{% elif product.article %}{{ product.article }}{% else %}0{% endif %})">
