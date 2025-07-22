@@ -119,6 +119,9 @@ def product_search(request):
     error = None
     brands_list = []
     show_brand_select = False
+    main_products = []  # Основной артикул
+    analog_products = []  # Аналоги
+    transit_products = []  # Транзитные склады
     if query:
         if not brand:
             # Получаем список брендов для выбора
@@ -127,8 +130,10 @@ def product_search(request):
         else:
             sputnik_result = search_sputnik_products(query, brand)
             if sputnik_result and sputnik_result.get('data'):
+                query_lower = query.strip().lower().replace(' ', '').replace('+', '')
+                brand_lower = brand.strip().lower()
                 for item in sputnik_result['data']:
-                    products.append({
+                    product = {
                         'name': item.get('name'),
                         'article': item.get('articul'),
                         'brand': item.get('brand', {}).get('name'),
@@ -138,14 +143,37 @@ def product_search(request):
                         'warehouse': item.get('price_name'),
                         'price': item.get('price'),
                         'supplier': 'Авто-Спутник',
-                        'is_analog': item.get('analog', False),
+                        'is_analog': str(item.get('analog', '')).lower() in ['true', '1', 'yes'],
                         'delivery_date': item.get('delivery_date'),
                         'unit': item.get('unit'),
                         'min': item.get('min'),
                         'cratnost': item.get('cratnost'),
                         'vozvrat': item.get('vozvrat'),
                         'official_diler': item.get('official_diler'),
-                    })
+                        'our': item.get('our', False),
+                    }
+                    article_lower = str(product['article']).strip().lower().replace(' ', '').replace('+', '')
+                    product_brand_lower = str(product['brand']).strip().lower()
+                    warehouse = str(product['warehouse']).lower()
+                    # Основной артикул: точное совпадение артикул+бренд и our: true
+                    if product['our'] and article_lower == query_lower and product_brand_lower == brand_lower:
+                        main_products.append(product)
+                    # Аналоги: analog: true и warehouse не содержит 'сторонний'/'транзит'
+                    elif product['is_analog'] and not ('сторон' in warehouse or 'транзит' in warehouse):
+                        analog_products.append(product)
+                    # Транзитные склады: analog: true и warehouse содержит 'сторонний' или 'транзит'
+                    elif product['is_analog'] and ('сторон' in warehouse or 'транзит' in warehouse):
+                        transit_products.append(product)
+                print(f"DEBUG: main_products count: {len(main_products)}")
+                print(f"DEBUG: analog_products count: {len(analog_products)}")
+                print(f"DEBUG: transit_products count: {len(transit_products)}")
+                if analog_products:
+                    print('DEBUG: analog_products example:', analog_products[0])
+                if transit_products:
+                    print('DEBUG: transit_products example:', transit_products[0])
+                print('DEBUG: Все товары из Sputnik API:')
+                for item in sputnik_result['data']:
+                    print(f"ARTICUL: {item.get('articul')}, BRAND: {item.get('brand', {}).get('name')}, ANALOG: {item.get('analog')}, OUR: {item.get('our')}, PRICE_NAME: {item.get('price_name')}")
             elif sputnik_result and sputnik_result.get('error'):
                 error = sputnik_result.get('error')
 
@@ -270,6 +298,9 @@ def product_search(request):
         'brand_country_iso': brand_country_iso,
         'brands_list': brands_list,
         'show_brand_select': show_brand_select,
+        'main_products': main_products,
+        'analog_products': analog_products,
+        'transit_products': transit_products,
     }
     return render(request, 'catalog/search.html', context)
 
