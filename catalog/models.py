@@ -8,6 +8,7 @@ class WarehouseSettings(models.Model):
     show_spb_south = models.BooleanField(default=True, verbose_name='СПб Юг')
     show_moscow = models.BooleanField(default=True, verbose_name='Москва')
     show_other = models.BooleanField(default=True, verbose_name='Все другие')
+    show_avtosp = models.BooleanField(default=True, verbose_name='Авто-Сп')
 
     class Meta:
         verbose_name = 'Настройки складов'

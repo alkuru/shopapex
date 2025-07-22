@@ -13,7 +13,7 @@
         <h1 class="display-4 fw-bold">ShopApex — автозапчасти для вашего авто</h1>
         <p class="lead">Оригинальные и аналоговые детали, быстрый поиск, надежные поставщики</p>
         <form method="get" action="{% url 'catalog_web:search' %}" class="d-flex justify-content-center mt-4">
-            <input type="text" name="q" class="form-control w-50 me-2" placeholder="Введите артикул запчасти..." value="{{ request.GET.q|default_if_none:'' }}">
+            <input type="text" name="q" class="form-control w-50 me-2" placeholder="Введите артикул запчасти..." value="{{ request.GET.q|default:'' }}">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-search"></i> Найти
             </button>

@@ -87,7 +87,7 @@
                     {% if offers_by_article %}
                         (найдено товаров: {{ offers_by_article|length }})
                     {% endif %}
-                    {% if request.GET.test == 'true' %}
+                    {% if request.GET.test|default:'' == 'true' %}
                         <br><small class="text-warning"><i class="fas fa-flask"></i> Используются тестовые данные для демонстрации</small>
                     {% endif %}
                   </span>
@@ -108,7 +108,7 @@
                                 <i class="fas fa-flask"></i> Тестовые данные
                             </a>
                         {% endif %}
-                        {% if request.GET.test == 'true' and query %}
+                        {% if request.GET.test|default:'' == 'true' and query %}
                             <a href="?q={{ query }}" class="btn btn-info ms-2">
                                 <i class="fas fa-database"></i> Реальные данные
                             </a>
@@ -121,7 +121,7 @@
             <div class="row mb-2">
                 <div class="col-md-12">
                     <small class="text-muted">
-                        DEBUG: query="{{ query }}", test="{{ request.GET.test }}", 
+                        DEBUG: query="{{ query }}", test="{{ request.GET.test|default:'' }}", 
                         offers_count="{{ offers_by_article|length }}"
                     </small>
                 </div>
@@ -129,6 +129,37 @@
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
+                {% if show_brand_select %}
+                <div class="alert alert-info">Выберите производителя для артикула <strong>{{ query }}</strong>:</div>
+                <div class="table-responsive mb-4">
+                  <table class="table table-bordered align-middle table-sm bg-white mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Производитель</th>
+                        <th>Артикул</th>
+                        <th>Наименование</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for b in brands_list %}
+                      <tr>
+                        <td>{{ b.brand }}</td>
+                        <td>{{ b.articul }}</td>
+                        <td>{{ b.name }}</td>
+                        <td>
+                          <form method="get" style="display:inline;">
+                            <input type="hidden" name="q" value="{{ query }}">
+                            <input type="hidden" name="brand" value="{{ b.brand }}">
+                            <button type="submit" class="btn btn-primary btn-sm">Выбрать</button>
+                          </form>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+            {% endif %}
                 {% if offers_by_article %}
                 <div class="table-responsive">
                   <div class="custom-black-border">

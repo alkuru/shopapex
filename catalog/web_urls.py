@@ -34,4 +34,7 @@ urlpatterns = [
     path('supplier/<int:supplier_id>/order/<int:order_id>/', web_views.supplier_order_detail, name='supplier_order_detail'),
     path('supplier/<int:supplier_id>/sync-entities/', web_views.supplier_sync_entities, name='supplier_sync_entities'),
     path('supplier/<int:supplier_id>/search/', web_views.supplier_search_products, name='supplier_search'),
+
+    # Тестовый поиск АвтоСпутник
+    path('sputnik-search-test/', web_views.sputnik_search_test, name='sputnik_search_test'),
 ]

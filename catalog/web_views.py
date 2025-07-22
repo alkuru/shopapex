@@ -16,6 +16,7 @@ from .models import (
 from .forms import AdvancedSearchForm, QuickSearchForm
 import requests
 from django.conf import settings
+from catalog.sputnik_api import search_sputnik_products
 
 
 def catalog_home(request):
@@ -108,95 +109,45 @@ def product_detail(request, product_id):
 
 
 def product_search(request):
-    # --- Импортируем карту брендов и флагов ---
     from catalog.brand_country_map import brand_country_iso
-    """Поиск товаров по артикулу через FastAPI"""
+    from catalog.sputnik_api import get_sputnik_brands_full, search_sputnik_products
     query = request.GET.get('q', '')
+    brand = request.GET.get('brand', '').strip()
     sort = request.GET.get('sort')
     order = request.GET.get('order', 'asc')
     products = []
     error = None
+    brands_list = []
+    show_brand_select = False
     if query:
-        # Проверяем, нужно ли использовать тестовые данные для демонстрации
-        use_test_data = request.GET.get('test', '').lower() == 'true'
-        
-        if use_test_data:
-            # Используем тестовые данные для демонстрации логики
-            try:
-                resp = requests.get('http://fastapi:8001/test_search', params={'article': query}, timeout=10)
-            except Exception as e:
-                error = f"Ошибка запроса к тестовому API: {str(e)}"
-                resp = None
+        if not brand:
+            # Получаем список брендов для выбора
+            brands_list = get_sputnik_brands_full(query)
+            show_brand_select = True
         else:
-            # Используем реальные данные
-            try:
-                resp = requests.get('http://fastapi:8001/search', params={'article': query}, timeout=10)
-            except Exception as e:
-                error = f"Ошибка запроса к FastAPI: {str(e)}"
-                resp = None
-        
-        if resp and resp.status_code == 200:
-            try:
-                data = resp.json()
-                if data.get('status') == 'ok':
-                    products = data.get('data', [])
-                    for p in products:
-                        if 'availability' in p:
-                            try:
-                                p['stock_quantity'] = int(p['availability'])
-                            except Exception:
-                                p['stock_quantity'] = 0
-                    from catalog.models import WarehouseSettings
-                    ws = WarehouseSettings.objects.first()
-                    if ws:
-                        allowed_warehouses = []
-                        if ws.show_spb_north:
-                            allowed_warehouses.append('СПб Север')
-                        if ws.show_spb_south:
-                            allowed_warehouses.append('СПб Юг')
-                        if ws.show_moscow:
-                            allowed_warehouses.append('Москва')
-                        filtered = []
-                        if ws.show_other:
-                            for p in products:
-                                wh = (p.get('warehouse') or '').strip()
-                                if wh in allowed_warehouses or wh not in ['СПб Север', 'СПб Юг', 'Москва'] or wh == '':
-                                    filtered.append(p)
-                        else:
-                            for p in products:
-                                wh = (p.get('warehouse') or '').strip()
-                                if wh in allowed_warehouses:
-                                    filtered.append(p)
-                        products = filtered
-                    if query:
-                        from catalog.supplier_models import Supplier, SupplierProduct
-                        try:
-                            supplier = Supplier.objects.get(name="auto-sputnik.ru")
-                            supplier_products = SupplierProduct.objects.filter(
-                                supplier=supplier,
-                                is_active=True,
-                                article__iexact=query
-                            )
-                            for sp in supplier_products:
-                                products.append({
-                                    'name': sp.name,
-                                    'article': sp.article,
-                                    'brand': sp.brand,
-                                    'description': sp.name,
-                                    'stock_quantity': sp.availability,
-                                    'delivery_time': sp.delivery_time or '1-2 дня',
-                                    'warehouse': 'Авто-Сп',
-                                    'price': sp.price,
-                                    'supplier': supplier.name,
-                                })
-                        except Supplier.DoesNotExist:
-                            pass
-                else:
-                    error = data.get('message', 'Ошибка поиска')
-            except Exception as e:
-                error = f"Ошибка разбора ответа от FastAPI: {str(e)}\nТекст ответа: {resp.text}"
-        elif resp:
-            error = f"Ошибка FastAPI: код {resp.status_code}"
+            sputnik_result = search_sputnik_products(query, brand)
+            if sputnik_result and sputnik_result.get('data'):
+                for item in sputnik_result['data']:
+                    products.append({
+                        'name': item.get('name'),
+                        'article': item.get('articul'),
+                        'brand': item.get('brand', {}).get('name'),
+                        'description': '',
+                        'stock_quantity': item.get('quantity'),
+                        'delivery_time': item.get('delivery_day'),
+                        'warehouse': item.get('price_name'),
+                        'price': item.get('price'),
+                        'supplier': 'Авто-Спутник',
+                        'is_analog': item.get('analog', False),
+                        'delivery_date': item.get('delivery_date'),
+                        'unit': item.get('unit'),
+                        'min': item.get('min'),
+                        'cratnost': item.get('cratnost'),
+                        'vozvrat': item.get('vozvrat'),
+                        'official_diler': item.get('official_diler'),
+                    })
+            elif sputnik_result and sputnik_result.get('error'):
+                error = sputnik_result.get('error')
 
     def parse_delivery_time(val):
         import datetime, re
@@ -256,6 +207,14 @@ def product_search(request):
         except Exception:
             p['price'] = 1e9
 
+    # === Автоматический отладочный вывод по товарам автоспутника ===
+    sputnik_products = [p for p in products if p.get('supplier') == 'Авто-Спутник']
+    print(f"DEBUG: Sputnik products count: {len(sputnik_products)}")
+    if sputnik_products:
+        print(f"DEBUG: Sputnik product example: {sputnik_products[0]}")
+    else:
+        print("DEBUG: Sputnik products not found in products list")
+
     main_warehouses = ['СПб Север', 'СПб Юг', 'Москва']
     offers_by_article = {}
     for p in products:
@@ -309,6 +268,8 @@ def product_search(request):
         'page_title': 'Результаты поиска',
         'request': request,
         'brand_country_iso': brand_country_iso,
+        'brands_list': brands_list,
+        'show_brand_select': show_brand_select,
     }
     return render(request, 'catalog/search.html', context)
 
@@ -950,6 +911,18 @@ def supplier_api_search(request):
         return JsonResponse({'error': str(e)})
     
     return JsonResponse({'results': results})
+
+
+def sputnik_search_test(request):
+    """Тестовый view для поиска по АвтоСпутник. Возвращает JSON-ответ."""
+    articul = request.GET.get('articul', '').strip()
+    brand = request.GET.get('brand', '').strip() if 'brand' in request.GET else ''
+    if not articul:
+        return JsonResponse({'error': 'Нужно указать articul'}, status=400)
+    result = search_sputnik_products(articul)
+    if result is None:
+        return JsonResponse({'error': 'Ошибка поиска или получения токена'}, status=500)
+    return JsonResponse(result)
 
 # --- КОРЗИНА АВТОКОНТИНЕНТ ---
 def autokont_basket_add(request):
