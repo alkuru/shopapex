@@ -193,7 +193,18 @@ def product_search(request):
     from catalog.utils_sputnik import group_offers
     groups = []
     if products:
-        groups = group_offers(products)
+        original_groups = group_offers(products)
+        query_art = request.GET.get("q", "") or query
+        query_brand = request.GET.get("brand", "") or brand
+        def is_main_group(g):
+            return (
+                g["articul"] and g["brand"] and
+                g["articul"].lower() == (query_art or "").lower() and
+                g["brand"].lower() == (query_brand or "").lower()
+            )
+        def sort_groups(groups):
+            return sorted(groups, key=lambda g: (0 if is_main_group(g) else 1))
+        groups = sort_groups(original_groups)
 
     # Отладочная информация
     print(f"DEBUG: query = '{query}'")

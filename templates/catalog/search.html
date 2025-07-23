@@ -175,12 +175,12 @@
                           </td>
                         </tr>
                         {% endfor %}
-                        {% if g.hidden_count > 0 %}
+                        {% if g.hidden_shown > 0 %}
                         {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
                         <tr class="more-btn-row">
                           <td colspan="8">
                             <button class="show-more-btn" data-group="{{ key|escape }}">
-                              ещё {{ g.hidden_count }} предложений
+                              ещё {{ g.hidden_shown }} предложений
                             </button>
                           </td>
                         </tr>

@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 VISIBLE_LIMIT = 3
+HIDDEN_LIMIT = 10  # максимум под кнопкой
 
 def group_offers(items):
     """
@@ -29,15 +30,26 @@ def group_offers(items):
 
     result = []
     for (articul, brand), offers in groups.items():
-        # сортируем по цене (можно поменять на срок)
-        offers.sort(key=lambda o: o.get('price', 0))
+        offers.sort(key=lambda o: (
+            0 if (
+                o.get('our')
+                or 'основн' in (o.get('price_name','').lower())
+                or 'автоспутник' in (o.get('price_name','').lower())
+            ) else 1,
+            o.get('price') or 0
+        ))
         visible = offers[:VISIBLE_LIMIT]
-        hidden = offers[VISIBLE_LIMIT:]
+        rest    = offers[VISIBLE_LIMIT:]
+        hidden  = rest[:HIDDEN_LIMIT]
+        hidden_total = len(rest)
+        hidden_shown = len(hidden)
         result.append({
             "articul": articul,
             "brand": brand,
             "visible": visible,
             "hidden": hidden,
-            "hidden_count": len(hidden)
+            "hidden_total": hidden_total,   # всего скрытых (для инфы)
+            "hidden_shown": hidden_shown,   # сколько реально покажем
         })
+    return result
     return result
