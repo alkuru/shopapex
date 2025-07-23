@@ -131,16 +131,22 @@ def product_search(request):
             brands_list = get_sputnik_brands_full(query)
             show_brand_select = True
         else:
-            sputnik_items = search_sputnik_products(query, brand)
-            print('DEBUG: Sputnik API result:', sputnik_items)
-            if sputnik_items:
-                for item in sputnik_items:
+            raw = search_sputnik_products(query, brand)
+            if isinstance(raw, dict):
+                items = raw.get('data', [])
+            else:
+                items = raw or []
+            items = [p for p in items if isinstance(p, dict)]
+            print('DEBUG: Sputnik API result:', items)
+            if items:
+                for item in items:
                     item['price_label'] = price_label(item.get('price_name'))
                     item['is_analog'] = bool(item.get('analog'))
                     products.append({
                         'name': item.get('name'),
                         'article': item.get('articul'),
                         'brand': item.get('brand', {}).get('name') if isinstance(item.get('brand'), dict) else item.get('brand'),
+                        'brand_obj': item.get('brand'),
                         'description': '',
                         'stock_quantity': item.get('quantity'),
                         'delivery_time': item.get('delivery_day'),
@@ -183,75 +189,19 @@ def product_search(request):
                 return float('inf')
         products = sorted(products, key=lambda x: parse_price(x.get('price')), reverse=(order=='desc'))
 
-    if query:
-        query_lower = query.strip().lower().replace(' ', '').replace('+', '')
-        main_articles = []
-        other_products = []
-        new_products = []
-        for p in products:
-            if not isinstance(p, dict):
-                p = {
-                    'article': getattr(p, 'article', ''),
-                    'brand': getattr(p, 'brand', ''),
-                    'description': getattr(p, 'description', ''),
-                    'name': getattr(p, 'name', ''),
-                    'stock_quantity': getattr(p, 'stock_quantity', None),
-                    'delivery_time': getattr(p, 'delivery_time', ''),
-                    'warehouse': getattr(p, 'warehouse', ''),
-                    'price': getattr(p, 'price', ''),
-                }
-            article = str(p.get('article', '')).strip().lower().replace(' ', '').replace('+', '')
-            if article == query_lower:
-                p['is_main_article'] = True
-                main_articles.append(p)
-            else:
-                p['is_main_article'] = False
-                other_products.append(p)
-        # Добавляем аналоги в конец списка
-        products = main_articles + other_products
-
-    # Приведение price к float для корректной сортировки в шаблоне
-    for p in products:
-        try:
-            p['price'] = float(p.get('price', 1e9))
-        except Exception:
-            p['price'] = 1e9
-
-    # === Автоматический отладочный вывод по товарам автоспутника ===
-    sputnik_products = [p for p in products if p.get('supplier') == 'Авто-Спутник']
-    print(f"DEBUG: Sputnik products count: {len(sputnik_products)}")
-    if sputnik_products:
-        print(f"DEBUG: Sputnik product example: {sputnik_products[0]}")
-    else:
-        print("DEBUG: Sputnik products not found in products list")
-
-    offers_by_article = {}
-    for p in products:
-        article = p.get('article', '').strip()
-        wh = (p.get('warehouse') or '').strip()
-        if not article:
-            continue
-        if article not in offers_by_article:
-            offers_by_article[article] = {'all': []}
-        offers_by_article[article]['all'].append(p)
-
-    # DEBUG: Выводим все склады для каждого артикула
-    for article, offers in offers_by_article.items():
-        warehouses = [o.get('warehouse') for o in offers['all']]
-        print(f"DEBUG: Article {article}: warehouses = {warehouses}")
-
-    # Для шаблона: display = первые 3, hidden = остальные
-    for article in offers_by_article:
-        offers_by_article[article]['display'] = offers_by_article[article]['all'][:3]
-        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][3:]
+    # Группируем предложения по (articul, brand) для блока "Предложения"
+    from catalog.utils_sputnik import group_offers
+    groups = []
+    if products:
+        groups = group_offers(products)
 
     # Отладочная информация
     print(f"DEBUG: query = '{query}'")
-    print(f"DEBUG: offers_by_article keys = {list(offers_by_article.keys()) if offers_by_article else 'None'}")
+    print(f"DEBUG: groups count = {len(groups)}")
     print(f"DEBUG: request.GET = {dict(request.GET)}")
-    
+
     context = {
-        'offers_by_article': offers_by_article,
+        'groups': groups,
         'query': query,
         'error': error,
         'page_title': 'Результаты поиска',
@@ -259,9 +209,6 @@ def product_search(request):
         'brand_country_iso': brand_country_iso,
         'brands_list': brands_list,
         'show_brand_select': show_brand_select,
-        # 'main_products': main_products,  # больше не используется
-        # 'analog_products': analog_products,  # больше не используется
-        # 'transit_products': transit_products,  # больше не используется
     }
     return render(request, 'catalog/search.html', context)
 

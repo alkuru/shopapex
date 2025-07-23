@@ -84,9 +84,6 @@
                 <h1 class="mb-4" style="font-size:1.2rem; font-weight:normal;">
                   <span class="alert alert-info d-inline-block mb-0 w-100" style="border:none;background:#F5F5DC;color:#222;padding:0.5em 1em; font-size:1rem; max-width: 480px; min-width: 260px; width: 100%; box-sizing: border-box;">
                     <i class="fas fa-search"></i> Результаты поиска по артикулу: "<strong>{{ query }}</strong>"
-                    {% if offers_by_article %}
-                        (найдено товаров: {{ offers_by_article|length }})
-                    {% endif %}
                     <!-- убрано лишнее endif -->
                   </span>
                 </h1>
@@ -107,14 +104,6 @@
             </div>
             
             <!-- Отладочная информация -->
-            <div class="row mb-2">
-                <div class="col-md-12">
-                    <small class="text-muted">
-                        {# удалено: test #}
-                        offers_count="{{ offers_by_article|length }}"
-                    </small>
-                </div>
-            </div>
                 {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>
                 {% endif %}
@@ -149,11 +138,11 @@
                   </table>
                 </div>
             {% endif %}
-                {% if offers_by_article and offers_by_article|length > 0 %}
+                {% if groups and groups|length > 0 %}
                 <div class="table-responsive">
-                  {% for article, offers in offers_by_article.items %}
-                    <h4 class="mt-4 mb-2">Артикул: {{ article }} ({{ offers.all|length }})</h4>
-                    <table class="table table-bordered align-middle table-sm bg-white mb-4">
+                  {% for g in groups %}
+                    <h4 class="mt-4 mb-2">Артикул: {{ g.articul }} ({{ g.brand }})</h4>
+                    <table class="table table-bordered align-middle table-sm bg-white mb-4 offers-table">
                       <thead class="table-light">
                         <tr>
                           <th>Артикул</th>
@@ -167,29 +156,63 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {% for product in offers.all %}
-                        <tr class="{% if product.is_main_article %}main-article-row{% endif %}">
-                          <td>{{ product.article|default:"-" }}</td>
-                          <td>{{ product.brand|default:"-" }}</td>
-                          <td>{{ product.name|default:"-"|truncatechars:60 }}</td>
-                          <td>{{ product.stock_quantity|default:"-" }}</td>
-                          <td>{{ product.delivery_time|default:"-" }}</td>
-                          <td>{{ product.price_label|default:product.warehouse|default:"-" }}</td>
-                          <td><strong>{{ product.price|default:"-" }} ₽</strong></td>
+                        {% for p in g.visible %}
+                        <tr>
+                          <td>{{ p.article|default:"-" }}</td>
+                          <td>{{ p.brand|default:"-" }}</td>
+                          <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                          <td>{{ p.stock_quantity|default:"-" }}</td>
+                          <td>{{ p.delivery_time|default:"-" }}</td>
+                          <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                          <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
                           <td>
-                            {% if product.is_analog %}
+                            {% if p.is_analog %}
                               <span class="analog" style="color:red;font-weight:bold;">Аналог</span>
                             {% endif %}
-                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ product.article|default:'' }}')">
+                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
                               <i class="fas fa-cart-plus" style="font-size:14px;"></i>
                             </button>
                           </td>
                         </tr>
                         {% endfor %}
+                        {% if g.hidden_count > 0 %}
+                        {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
+                        <tr class="more-btn-row">
+                          <td colspan="8">
+                            <button class="show-more-btn" data-group="{{ key|escape }}">
+                              ещё {{ g.hidden_count }} предложений
+                            </button>
+                          </td>
+                        </tr>
+                        {% for p in g.hidden %}
+                        <tr class="hidden group-{{ key|escape }}">
+                          <td>{{ p.article|default:"-" }}</td>
+                          <td>{{ p.brand|default:"-" }}</td>
+                          <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                          <td>{{ p.stock_quantity|default:"-" }}</td>
+                          <td>{{ p.delivery_time|default:"-" }}</td>
+                          <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                          <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
+                          <td>
+                            {% if p.is_analog %}
+                              <span class="analog" style="color:red;font-weight:bold;">Аналог</span>
+                            {% endif %}
+                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
+                              <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                            </button>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                        {% endwith %}
+                        {% endif %}
                       </tbody>
                     </table>
                   {% endfor %}
                 </div>
+<style>
+.hidden { display: none; }
+.analog { color: red; font-weight: bold; }
+</style>
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-search fa-5x text-muted mb-3"></i>
@@ -210,5 +233,12 @@ function addToCart(productId) {
     alert('Товар добавлен в корзину! (ID: ' + productId + ')');
     // Здесь будет AJAX запрос к API для добавления товара в корзину
 }
+document.addEventListener('click', function (e) {
+  if (e.target.classList.contains('show-more-btn')) {
+    const key = e.target.dataset.group;
+    document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.remove('hidden'));
+    e.target.closest('tr').remove(); // убираем кнопку
+  }
+});
 </script>
 {% endblock %}
