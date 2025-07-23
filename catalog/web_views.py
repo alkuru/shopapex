@@ -109,6 +109,13 @@ def product_detail(request, product_id):
 
 
 def product_search(request):
+    def price_label(pn: str) -> str:
+        pn = (pn or '').lower()
+        if 'сторон' in pn:
+            return 'Сторонний склад'
+        if 'транз' in pn:
+            return 'Транзит'
+        return pn or ''
     from catalog.brand_country_map import brand_country_iso
     from catalog.sputnik_api import get_sputnik_brands_full, search_sputnik_products
     query = request.GET.get('q', '')
@@ -124,33 +131,33 @@ def product_search(request):
             brands_list = get_sputnik_brands_full(query)
             show_brand_select = True
         else:
-            sputnik_result = search_sputnik_products(query, brand)
-            print('DEBUG: Sputnik API result:', sputnik_result)
-            if sputnik_result and sputnik_result.get('data'):
-                for item in sputnik_result['data']:
-                    product = {
+            sputnik_items = search_sputnik_products(query, brand)
+            print('DEBUG: Sputnik API result:', sputnik_items)
+            if sputnik_items:
+                for item in sputnik_items:
+                    item['price_label'] = price_label(item.get('price_name'))
+                    item['is_analog'] = bool(item.get('analog'))
+                    products.append({
                         'name': item.get('name'),
                         'article': item.get('articul'),
-                        'brand': item.get('brand', {}).get('name'),
+                        'brand': item.get('brand', {}).get('name') if isinstance(item.get('brand'), dict) else item.get('brand'),
                         'description': '',
                         'stock_quantity': item.get('quantity'),
                         'delivery_time': item.get('delivery_day'),
                         'warehouse': item.get('price_name'),
                         'price': item.get('price'),
                         'supplier': 'Авто-Спутник',
-                        'is_analog': str(item.get('analog', '')).lower() in ['true', '1', 'yes'],
+                        'is_analog': item['is_analog'],
+                        'price_label': item['price_label'],
                         'delivery_date': item.get('delivery_date'),
                         'unit': item.get('unit'),
                         'min': item.get('min'),
                         'cratnost': item.get('cratnost'),
                         'vozvrat': item.get('vozvrat'),
                         'official_diler': item.get('official_diler'),
-                        'our': item.get('our', False),
-                    }
-                    products.append(product)
+                    })
             else:
-                # Показываем ошибку или debug-ответ на странице
-                error = sputnik_result.get('error') if sputnik_result and sputnik_result.get('error') else f"Нет данных от АвтоСпутник. Ответ: {sputnik_result}"
+                error = "Нет данных от АвтоСпутник."
 
     def parse_delivery_time(val):
         import datetime, re
@@ -218,7 +225,6 @@ def product_search(request):
     else:
         print("DEBUG: Sputnik products not found in products list")
 
-    main_warehouses = ['СПб Север', 'СПб Юг', 'Москва']
     offers_by_article = {}
     for p in products:
         article = p.get('article', '').strip()
@@ -226,38 +232,18 @@ def product_search(request):
         if not article:
             continue
         if article not in offers_by_article:
-            offers_by_article[article] = {'main': [], 'other': [], 'all': []}
-        if wh in main_warehouses:
-            offers_by_article[article]['main'].append(p)
-        else:
-            offers_by_article[article]['other'].append(p)
+            offers_by_article[article] = {'all': []}
         offers_by_article[article]['all'].append(p)
-    
-    # Сортируем все предложения по приоритету складов и цене (как в Автоконтиненте)
-    warehouse_priority = {
-        'СПб Север': 1,
-        'СПб Юг': 2, 
-        'Москва': 3
-    }
-    
-    for article in offers_by_article:
-        # Сортируем по приоритету складов, затем по цене
-        offers_by_article[article]['all'].sort(key=lambda x: (
-            warehouse_priority.get(x.get('warehouse', ''), 999),  # Приоритет склада
-            float(x.get('price', 1e9))  # Цена
-        ))
-        
-        # Берем только первые 3 для отображения (как в Автоконтиненте)
-        offers_by_article[article]['display'] = offers_by_article[article]['all'][:3]
-        
-        # Остальные для кнопки "Ещё предложения"
-        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][3:]
 
-    print('DEBUG: offers_by_article keys count:', len(offers_by_article))
-    print('DEBUG: first 3 articles:', list(offers_by_article.keys())[:3])
+    # DEBUG: Выводим все склады для каждого артикула
     for article, offers in offers_by_article.items():
-        print(f'DEBUG: Article {article}: display={len(offers.get("display", []))}, hidden={len(offers.get("hidden", []))}, all={len(offers.get("all", []))}')
-        print(f'DEBUG: Article {article} display keys: {list(offers.keys())}')
+        warehouses = [o.get('warehouse') for o in offers['all']]
+        print(f"DEBUG: Article {article}: warehouses = {warehouses}")
+
+    # Для шаблона: display = первые 3, hidden = остальные
+    for article in offers_by_article:
+        offers_by_article[article]['display'] = offers_by_article[article]['all'][:3]
+        offers_by_article[article]['hidden'] = offers_by_article[article]['all'][3:]
 
     # Отладочная информация
     print(f"DEBUG: query = '{query}'")

@@ -72,11 +72,13 @@ def search_sputnik_products(articul, brand):
         return None
     url = f'{API_URL}/products/getproducts'
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-    data = {'articul': articul, 'brand': brand, 'analogi': True, 'tranzit': False}
+    data = {'articul': articul, 'brand': brand, 'analogi': True, 'tranzit': True}
     try:
         resp = requests.post(url, json=data, headers=headers, timeout=10)
         resp.raise_for_status()
-        return resp.json()
+        j = resp.json()
+        # Возвращаем сразу список товаров, чтобы дальше не городили огород
+        return j.get('data', [])
     except Exception as e:
         print(f'Ошибка поиска АвтоСпутник: {e}')
-        return None 
+        return []
