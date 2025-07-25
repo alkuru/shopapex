@@ -95,9 +95,15 @@
                                         <small class="text-muted"><i class="fas fa-tag"></i> {{ product.brand.name }}</small><br>
                                         <strong><i class="fas fa-ruble-sign"></i> {{ product.price }} ₽</strong>
                                     </p>
+                                    {% if product.id %}
                                     <a href="{% url 'catalog_web:product_detail' product.id %}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-info-circle"></i> Подробнее
                                     </a>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-primary" disabled>
+                                        <i class="fas fa-info-circle"></i> Подробнее
+                                    </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

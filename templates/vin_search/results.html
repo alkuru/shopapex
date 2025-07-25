@@ -82,9 +82,13 @@
                                     </p>
                                 </div>
                                 <div class="card-footer bg-transparent">
-                                    <a href="{% url 'catalog_web:product_detail' product.id %}" class="btn btn-sm btn-primary w-100">
-                                        Подробнее
-                                    </a>
+                                    {% if product.id %}
+                                        <a href="{% url 'catalog_web:product_detail' product.id %}" class="btn btn-sm btn-primary w-100">
+                                            Подробнее
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-primary w-100" disabled>Подробнее</button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

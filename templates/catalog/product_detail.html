@@ -70,9 +70,13 @@
                                         <p class="text-muted small mb-1">{{ analog.brand.name }}</p>
                                         <p class="text-muted small mb-1">Артикул: {{ analog.article }}</p>
                                         <p class="mb-2"><strong>{{ analog.price }} ₽</strong></p>
+                                        {% if analog.id %}
                                         <a href="{% url 'catalog_web:product_detail' analog.id %}" class="btn btn-sm btn-outline-primary">
                                             Смотреть
                                         </a>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-outline-primary" disabled>Смотреть</button>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -118,9 +122,13 @@
                                     <p class="card-text small">
                                         <strong>{{ related.price }} ₽</strong>
                                     </p>
+                                    {% if related.id %}
                                     <a href="{% url 'catalog_web:product_detail' related.id %}" class="btn btn-sm btn-outline-primary w-100">
                                         Смотреть
                                     </a>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-primary w-100" disabled>Смотреть</button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
