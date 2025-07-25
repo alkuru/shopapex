@@ -218,6 +218,9 @@ def product_search(request):
     print(f"DEBUG: groups count = {len(groups)}")
     print(f"DEBUG: request.GET = {dict(request.GET)}")
 
+    # Словарь описаний брендов для быстрого доступа в шаблоне
+    brand_descriptions = {b.name: b.description for b in Brand.objects.filter(is_active=True) if b.description}
+
     context = {
         'groups': groups,
         'query': query,
@@ -227,6 +230,7 @@ def product_search(request):
         'brand_country_iso': brand_country_iso,
         'brands_list': brands_list,
         'show_brand_select': show_brand_select,
+        'brand_descriptions': brand_descriptions,
     }
     return render(request, 'catalog/search.html', context)
 

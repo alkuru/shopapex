@@ -193,7 +193,7 @@
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              {{ p.brand|default:"-" }}
+                              <strong>{{ p.brand|default:"-" }}</strong>
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -207,17 +207,18 @@
                             </td>
                           </tr>
                           {% endfor %}
-                          {% if g.hidden_shown > 0 %}
-                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
+                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:''|slugify %}
                           <tr class="more-btn-row">
                             <td colspan="8">
-                              <button class="show-more-btn" data-group="{{ key|escape }}">
-                                ещё {{ g.hidden_shown }} предложений
+                              <button class="btn btn-outline-dark btn-sm show-more-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
+                                ещё {{ g.hidden_shown|default:0 }} предложений
                               </button>
+                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand|escapejs }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
+                              <span class="brand-desc-text" data-brand="{{ g.brand|escapejs }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
                             </td>
                           </tr>
                           {% for p in g.hidden %}
-                          <tr class="hidden group-{{ key|escape }}">
+                          <tr class="hidden group-{{ key }}">
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
                               {% with flag=p.brand|brand_flag %}
@@ -225,7 +226,7 @@
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              {{ p.brand|default:"-" }}
+                              <strong>{{ p.brand|default:"-" }}</strong>
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -239,8 +240,14 @@
                             </td>
                           </tr>
                           {% endfor %}
+                          <tr class="hidden collapse-btn-row group-{{ key }}" data-brand="{{ g.brand|escapejs }}">
+                            <td colspan="8">
+                              <button class="btn btn-outline-dark btn-sm collapse-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
+                                свернуть
+                              </button>
+                            </td>
+                          </tr>
                           {% endwith %}
-                          {% endif %}
                         </tbody>
                       </table>
                       {# Блок с надписью 'аналоги артикула ...' #}
@@ -271,7 +278,7 @@
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              {{ p.brand|default:"-" }}
+                              <strong>{{ p.brand|default:"-" }}</strong>
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -285,17 +292,18 @@
                             </td>
                           </tr>
                           {% endfor %}
-                          {% if g.hidden_shown > 0 %}
-                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
+                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:''|slugify %}
                           <tr class="more-btn-row">
                             <td colspan="8">
-                              <button class="show-more-btn" data-group="{{ key|escape }}">
-                                ещё {{ g.hidden_shown }} предложений
+                              <button class="btn btn-outline-dark btn-sm show-more-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
+                                ещё {{ g.hidden_shown|default:0 }} предложений
                               </button>
+                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand|escapejs }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
+                              <span class="brand-desc-text" data-brand="{{ g.brand|escapejs }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
                             </td>
                           </tr>
                           {% for p in g.hidden %}
-                          <tr class="hidden group-{{ key|escape }}">
+                          <tr class="hidden group-{{ key }}">
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
                               {% with flag=p.brand|brand_flag %}
@@ -303,7 +311,7 @@
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              {{ p.brand|default:"-" }}
+                              <strong>{{ p.brand|default:"-" }}</strong>
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -317,8 +325,14 @@
                             </td>
                           </tr>
                           {% endfor %}
+                          <tr class="hidden collapse-btn-row group-{{ key }}" data-brand="{{ g.brand|escapejs }}">
+                            <td colspan="8">
+                              <button class="btn btn-outline-dark btn-sm collapse-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
+                                свернуть
+                              </button>
+                            </td>
+                          </tr>
                           {% endwith %}
-                          {% endif %}
                         </tbody>
                       </table>
                     {% endif %}
@@ -342,6 +356,13 @@
     </div>
 </div>
 
+{# Модальное окно для описания бренда #}
+<div id="brandDescModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);">
+  <div style="background:#fff;max-width:480px;margin:8vh auto;padding:24px 24px 16px 24px;border-radius:8px;box-shadow:0 2px 16px #0002;position:relative;">
+    <button id="brandDescModalClose" style="position:absolute;right:12px;top:8px;font-size:20px;background:none;border:none;cursor:pointer;">&times;</button>
+    <div id="brandDescModalContent" style="font-size:15px;line-height:1.5;"></div>
+  </div>
+</div>
 <script>
 function addToCart(productId) {
     // Заглушка для добавления в корзину
@@ -351,9 +372,42 @@ function addToCart(productId) {
 document.addEventListener('click', function (e) {
   if (e.target.classList.contains('show-more-btn')) {
     const key = e.target.dataset.group;
-    document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.remove('hidden'));
-    e.target.closest('tr').remove(); // убираем кнопку
+    const hiddenRows = document.querySelectorAll('.group-' + key + ':not(.collapse-btn-row)');
+    if (hiddenRows.length > 0) {
+      document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.remove('hidden'));
+      e.target.closest('tr').remove(); // убираем кнопку "ещё предложений"
+    }
   }
+  if (e.target.classList.contains('collapse-btn')) {
+    const key = e.target.dataset.group;
+    document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.add('hidden'));
+    // Восстанавливаем кнопку "ещё предложений"
+    const hiddenCount = document.querySelectorAll('.group-' + key + ':not(.collapse-btn-row)').length;
+    const moreBtnRow = document.createElement('tr');
+    moreBtnRow.className = 'more-btn-row';
+    moreBtnRow.innerHTML = '<td colspan="8"><button class="btn btn-outline-dark btn-sm show-more-btn" data-group="' + key + '" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">ещё ' + hiddenCount + ' предложений</button><button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="' + e.target.closest('tr').getAttribute('data-brand') + '" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button></td>';
+    e.target.closest('tr').insertAdjacentElement('beforebegin', moreBtnRow);
+    // НЕ удаляем кнопку "свернуть", просто скрываем её
+    e.target.closest('tr').classList.add('hidden');
+  }
+});
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.brand-desc-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var brand = btn.getAttribute('data-brand');
+      var desc = document.querySelector('.brand-desc-text[data-brand="' + brand + '"]');
+      if (desc) {
+        document.getElementById('brandDescModalContent').innerHTML = desc.innerHTML;
+        document.getElementById('brandDescModal').style.display = 'block';
+      }
+    });
+  });
+  document.getElementById('brandDescModalClose').onclick = function() {
+    document.getElementById('brandDescModal').style.display = 'none';
+  };
+  document.getElementById('brandDescModal').onclick = function(e) {
+    if (e.target === this) this.style.display = 'none';
+  };
 });
 </script>
 {% endblock %}

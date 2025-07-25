@@ -29,3 +29,8 @@ def brand_flag(brand_name):
         if key == k_norm:
             return v
     return ''
+
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
