@@ -169,71 +169,159 @@
                 {% if groups and groups|length > 0 %}
                 <div class="table-responsive">
                   {% for g in groups %}
-                    <table class="table table-bordered align-middle table-sm bg-white mb-4 offers-table">
-                      <thead class="table-light">
-                        <tr>
-                          <th>Артикул</th>
-                          <th>Бренд</th>
-                          <th>Наименование</th>
-                          <th>Наличие</th>
-                          <th>Срок поставки</th>
-                          <th>Склад</th>
-                          <th>Цена</th>
-                          <th>Корзина</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {% for p in g.visible %}
-                        <tr>
-                          <td>{{ p.article|default:"-" }}</td>
-                          <td>{{ p.brand|default:"-" }}</td>
-                          <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
-                          <td>{{ p.stock_quantity|default:"-" }}</td>
-                          <td>{{ p.delivery_time|default:"-" }}</td>
-                          <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
-                          <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
-                          <td>
-                            {% if p.is_analog %}
-                              <span class="analog" style="color:red;font-weight:bold;">Аналог</span>
-                            {% endif %}
-                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
-                              <i class="fas fa-cart-plus" style="font-size:14px;"></i>
-                            </button>
-                          </td>
-                        </tr>
-                        {% endfor %}
-                        {% if g.hidden_shown > 0 %}
-                        {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
-                        <tr class="more-btn-row">
-                          <td colspan="8">
-                            <button class="show-more-btn" data-group="{{ key|escape }}">
-                              ещё {{ g.hidden_shown }} предложений
-                            </button>
-                          </td>
-                        </tr>
-                        {% for p in g.hidden %}
-                        <tr class="hidden group-{{ key|escape }}">
-                          <td>{{ p.article|default:"-" }}</td>
-                          <td>{{ p.brand|default:"-" }}</td>
-                          <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
-                          <td>{{ p.stock_quantity|default:"-" }}</td>
-                          <td>{{ p.delivery_time|default:"-" }}</td>
-                          <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
-                          <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
-                          <td>
-                            {% if p.is_analog %}
-                              <span class="analog" style="color:red;font-weight:bold;">Аналог</span>
-                            {% endif %}
-                            <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
-                              <i class="fas fa-cart-plus" style="font-size:14px;"></i>
-                            </button>
-                          </td>
-                        </tr>
-                        {% endfor %}
-                        {% endwith %}
-                        {% endif %}
-                      </tbody>
-                    </table>
+                    {% if forloop.first %}
+                      <table class="table table-bordered align-middle table-sm bg-white mb-4 offers-table">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Артикул</th>
+                            <th>Бренд</th>
+                            <th>Наименование</th>
+                            <th>Наличие</th>
+                            <th>Срок поставки</th>
+                            <th>Склад</th>
+                            <th>Цена</th>
+                            <th>Корзина</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for p in g.visible %}
+                          <tr>
+                            <td>{{ p.article|default:"-" }}</td>
+                            <td>
+                              {% with flag=p.brand|brand_flag %}
+                                {% if flag %}
+                                  <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
+                                {% endif %}
+                              {% endwith %}
+                              {{ p.brand|default:"-" }}
+                            </td>
+                            <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                            <td>{{ p.stock_quantity|default:"-" }}</td>
+                            <td>{{ p.delivery_time|default:"-" }}</td>
+                            <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                            <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
+                            <td>
+                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
+                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                          {% if g.hidden_shown > 0 %}
+                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
+                          <tr class="more-btn-row">
+                            <td colspan="8">
+                              <button class="show-more-btn" data-group="{{ key|escape }}">
+                                ещё {{ g.hidden_shown }} предложений
+                              </button>
+                            </td>
+                          </tr>
+                          {% for p in g.hidden %}
+                          <tr class="hidden group-{{ key|escape }}">
+                            <td>{{ p.article|default:"-" }}</td>
+                            <td>
+                              {% with flag=p.brand|brand_flag %}
+                                {% if flag %}
+                                  <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
+                                {% endif %}
+                              {% endwith %}
+                              {{ p.brand|default:"-" }}
+                            </td>
+                            <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                            <td>{{ p.stock_quantity|default:"-" }}</td>
+                            <td>{{ p.delivery_time|default:"-" }}</td>
+                            <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                            <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
+                            <td>
+                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
+                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                          {% endwith %}
+                          {% endif %}
+                        </tbody>
+                      </table>
+                      {# Блок с надписью 'аналоги артикула ...' #}
+                      <div style="border: 1px solid #d00; border-radius: 4px; background: #fff; color: #111; font-weight: bold; display: inline-block; padding: 2px 18px; margin: 10px 0 8px 0; font-size: 15px;">
+                        аналоги артикула {{ g.articul }}
+                      </div>
+                    {% else %}
+                      <table class="table table-bordered align-middle table-sm bg-white mb-4 offers-table">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Артикул</th>
+                            <th>Бренд</th>
+                            <th>Наименование</th>
+                            <th>Наличие</th>
+                            <th>Срок поставки</th>
+                            <th>Склад</th>
+                            <th>Цена</th>
+                            <th>Корзина</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for p in g.visible %}
+                          <tr>
+                            <td>{{ p.article|default:"-" }}</td>
+                            <td>
+                              {% with flag=p.brand|brand_flag %}
+                                {% if flag %}
+                                  <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
+                                {% endif %}
+                              {% endwith %}
+                              {{ p.brand|default:"-" }}
+                            </td>
+                            <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                            <td>{{ p.stock_quantity|default:"-" }}</td>
+                            <td>{{ p.delivery_time|default:"-" }}</td>
+                            <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                            <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
+                            <td>
+                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
+                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                          {% if g.hidden_shown > 0 %}
+                          {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:'' %}
+                          <tr class="more-btn-row">
+                            <td colspan="8">
+                              <button class="show-more-btn" data-group="{{ key|escape }}">
+                                ещё {{ g.hidden_shown }} предложений
+                              </button>
+                            </td>
+                          </tr>
+                          {% for p in g.hidden %}
+                          <tr class="hidden group-{{ key|escape }}">
+                            <td>{{ p.article|default:"-" }}</td>
+                            <td>
+                              {% with flag=p.brand|brand_flag %}
+                                {% if flag %}
+                                  <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
+                                {% endif %}
+                              {% endwith %}
+                              {{ p.brand|default:"-" }}
+                            </td>
+                            <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
+                            <td>{{ p.stock_quantity|default:"-" }}</td>
+                            <td>{{ p.delivery_time|default:"-" }}</td>
+                            <td>{{ p.price_label|default:p.warehouse|default:"-" }}</td>
+                            <td><strong>{{ p.price|default:"-" }} ₽</strong></td>
+                            <td>
+                              <button class="btn btn-primary cart-btn-custom" style="padding:2px 6px; font-size:14px; min-width:unset; width:auto;" onclick="addToCart('{{ p.article|default:'' }}')">
+                                <i class="fas fa-cart-plus" style="font-size:14px;"></i>
+                              </button>
+                            </td>
+                          </tr>
+                          {% endfor %}
+                          {% endwith %}
+                          {% endif %}
+                        </tbody>
+                      </table>
+                    {% endif %}
                   {% endfor %}
                 </div>
 <style>
