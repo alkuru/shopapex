@@ -35,7 +35,35 @@
     border-bottom: 4px solid #696969 !important;
     background: #A9A9A9 !important;
     color: #fff !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    height: 20px;
+    padding: 0 4px;
   }
+  .table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 13px;
+  }
+  .table th, .table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 20px;
+    vertical-align: middle;
+    padding: 0 4px;
+    font-size: 13px;
+  }
+  .table th:nth-child(1), .table td:nth-child(1) { width: 90px; }
+  .table th:nth-child(2), .table td:nth-child(2) { width: 120px; }
+  .table th:nth-child(3), .table td:nth-child(3) { width: 220px; }
+  .table th:nth-child(4), .table td:nth-child(4) { width: 70px; }
+  .table th:nth-child(5), .table td:nth-child(5) { width: 90px; }
+  .table th:nth-child(6), .table td:nth-child(6) { width: 160px; }
+  .table th:nth-child(7), .table td:nth-child(7) { width: 90px; }
+  .table th:nth-child(8), .table td:nth-child(8) { width: 90px; }
   .table thead th a,
   .table thead th a:visited,
   .table thead th a:active {
@@ -141,7 +169,6 @@
                 {% if groups and groups|length > 0 %}
                 <div class="table-responsive">
                   {% for g in groups %}
-                    <h4 class="mt-4 mb-2">Артикул: {{ g.articul }} ({{ g.brand }})</h4>
                     <table class="table table-bordered align-middle table-sm bg-white mb-4 offers-table">
                       <thead class="table-light">
                         <tr>

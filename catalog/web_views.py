@@ -111,6 +111,13 @@ def product_detail(request, product_id):
 def product_search(request):
     def price_label(pn: str) -> str:
         pn = (pn or '').lower()
+        # Для автоспутник: оставить только 'цс воронеж', 'цс краснодар', 'цс ростов'
+        if 'цс воронеж' in pn:
+            return 'цс воронеж'
+        if 'цс краснодар' in pn:
+            return 'цс краснодар'
+        if 'цс ростов' in pn:
+            return 'цс ростов'
         if 'сторон' in pn:
             return 'Сторонний склад'
         if 'транз' in pn:
