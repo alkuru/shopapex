@@ -153,6 +153,227 @@
     margin-right: 12px !important;
     object-fit: cover !important;
   }
+  /* Стили для flip-эффекта кнопки гаража */
+  .garage-btn-flip {
+    perspective: 1000px;
+    display: inline-block;
+    margin: 10px 16px 10px 0 !important;
+  }
+  .garage-btn-flip-inner {
+    position: relative;
+    width: 250px;
+    height: 100px;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  .garage-btn-flip:hover .garage-btn-flip-inner {
+    transform: rotateY(180deg);
+  }
+  .garage-btn-flip .front,
+  .garage-btn-flip .back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #d00 !important;
+    border-radius: 18px !important;
+    outline: 4px solid #000 !important;
+    outline-offset: 3px !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    font-weight: 500 !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.22), 0 2px 8px 0 rgba(220,0,0,0.18);
+  }
+  .garage-btn-flip .front {
+    flex-direction: row;
+    padding: 2rem 3rem !important;
+  }
+  .garage-btn-flip .back {
+    transform: rotateY(180deg);
+    flex-direction: column;
+    padding: 1rem !important;
+    font-size: 0.72rem !important;
+    text-align: center;
+  }
+  .garage-btn-flip .back .garage-instruction {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+  }
+  .garage-btn-flip .back .garage-instruction b {
+    display: block;
+    margin-top: 0;
+    margin-bottom: 0.12rem;
+    font-size: 0.68rem !important;
+    font-weight: 600;
+  }
+  .garage-btn-flip .back .garage-instruction ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+    font-size: 0.7rem;
+  }
+  .garage-btn-flip .back .garage-instruction li {
+    margin: 0.2rem 0;
+  }
+  .garage-btn-flip .back .btn {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.8rem !important;
+    border: 1px solid #000 !important;
+    background: #000 !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+  }
+  .garage-btn-flip .back .btn:hover {
+    background: #333 !important;
+  }
+  .orders-btn-flip {
+    perspective: 1000px;
+    display: inline-block;
+    margin: 10px 16px 10px 0 !important;
+  }
+  .orders-btn-flip-inner {
+    position: relative;
+    width: 250px;
+    height: 100px;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  .orders-btn-flip:hover .orders-btn-flip-inner {
+    transform: rotateY(180deg);
+  }
+  .orders-btn-flip .front,
+  .orders-btn-flip .back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #d00 !important;
+    border-radius: 18px !important;
+    outline: 4px solid #000 !important;
+    outline-offset: 3px !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    font-weight: 500 !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.22), 0 2px 8px 0 rgba(220,0,0,0.18);
+  }
+  .orders-btn-flip .front {
+    flex-direction: row;
+    padding: 2rem 3rem !important;
+  }
+  .orders-btn-flip .back {
+    transform: rotateY(180deg);
+    flex-direction: column;
+    padding: 1rem !important;
+    font-size: 0.72rem !important;
+    text-align: center;
+  }
+  .orders-btn-flip .back .orders-instruction {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+  }
+  .orders-btn-flip .back .orders-instruction ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+    font-size: 0.7rem;
+  }
+  .orders-btn-flip .back .orders-instruction li {
+    margin: 0.2rem 0;
+  }
+  .orders-btn-flip .back .btn {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.8rem !important;
+    border: 1px solid #000 !important;
+    background: #000 !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+  }
+  .orders-btn-flip .back .btn:hover {
+    background: #333 !important;
+  }
+  .big-cart-btn-flip {
+    perspective: 1000px;
+    display: inline-block;
+    margin: 10px 0 10px 0 !important;
+  }
+  .big-cart-btn-flip-inner {
+    position: relative;
+    width: 250px;
+    height: 100px;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  .big-cart-btn-flip:hover .big-cart-btn-flip-inner {
+    transform: rotateY(180deg);
+  }
+  .big-cart-btn-flip .front,
+  .big-cart-btn-flip .back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #c44 !important;
+    border-radius: 18px !important;
+    outline: 4px solid #000 !important;
+    outline-offset: 3px !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    font-weight: 500 !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.22), 0 2px 8px 0 rgba(220,0,0,0.18);
+  }
+  .big-cart-btn-flip .front {
+    flex-direction: row;
+    padding: 2rem 3rem !important;
+  }
+  .big-cart-btn-flip .back {
+    transform: rotateY(180deg);
+    flex-direction: column;
+    padding: 1rem !important;
+    font-size: 0.72rem !important;
+    text-align: center;
+  }
+  .big-cart-btn-flip .back .cart-instruction {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+  }
+  .big-cart-btn-flip .back .cart-instruction ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+    font-size: 0.7rem;
+  }
+  .big-cart-btn-flip .back .cart-instruction li {
+    margin: 0.2rem 0;
+  }
+  .big-cart-btn-flip .back .btn {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.8rem !important;
+    border: 1px solid #000 !important;
+    background: #000 !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+  }
+  .big-cart-btn-flip .back .btn:hover {
+    background: #333 !important;
+  }
 </style>
 <div class="container my-4">
     <div class="row">
@@ -176,18 +397,60 @@
                     </div>
                 </form>
                 {% if user.is_authenticated %}
-                <a href="{% url 'accounts_web:garage_page' %}" class="garage-btn-ultra-custom">
-                    <img src="{% static 'images/garage-icon.jpg' %}?v=20" alt="Гараж" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
-                    Мой гараж
-                </a>
-                <a href="{% url 'orders_web:orders_page' %}" class="orders-btn-ultra-custom">
-                    <img src="{% static 'images/orders-icon.jpg' %}?v=1" alt="Заказы" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
-                    Заказы
-                </a>
-                <a href="{% url 'catalog_web:cart' %}" class="big-cart-btn-ultra-custom">
-                    <img src="{% static 'images/cart-icon.jpg' %}?v=1" alt="Корзина" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
-                    Корзина
-                </a>
+                <div class="garage-btn-flip">
+                  <div class="garage-btn-flip-inner">
+                    <div class="front">
+                      <img src="{% static 'images/garage-icon.jpg' %}?v=20" alt="Гараж" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
+                      Мой гараж
+                    </div>
+                    <div class="back">
+                      <div class="garage-instruction">
+                        <ul>
+                          <li>• Добавьте VIN вашего авто</li>
+                          <li>• Сохраняйте несколько машин</li>
+                          <li>• Быстрый доступ к своим авто</li>
+                        </ul>
+                        <a href="{% url 'accounts_web:garage_page' %}" class="btn">Перейти в гараж</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="orders-btn-flip">
+                  <div class="orders-btn-flip-inner">
+                    <div class="front">
+                      <img src="{% static 'images/orders-icon.jpg' %}?v=1" alt="Заказы" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
+                      Заказы
+                    </div>
+                    <div class="back">
+                      <div class="orders-instruction">
+                        <ul>
+                          <li>• Просматривайте все свои заказы</li>
+                          <li>• Следите за статусом выполнения</li>
+                          <li>• Повторяйте заказы в один клик</li>
+                        </ul>
+                        <a href="{% url 'orders_web:orders_page' %}" class="btn">Перейти к заказам</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="big-cart-btn-flip">
+                  <div class="big-cart-btn-flip-inner">
+                    <div class="front">
+                      <img src="{% static 'images/cart-icon.jpg' %}?v=1" alt="Корзина" style="width: 90px !important; height: 90px !important; margin-right: 20px !important; object-fit: cover !important; display: block !important; max-width: none !important; max-height: none !important;">
+                      Корзина
+                    </div>
+                    <div class="back">
+                      <div class="cart-instruction">
+                        <ul>
+                          <li>• Добавляйте товары в корзину</li>
+                          <li>• Изменяйте количество и удаляйте позиции</li>
+                          <li>• Оформляйте заказ в один клик</li>
+                        </ul>
+                        <a href="{% url 'catalog_web:cart' %}" class="btn">Перейти в корзину</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {% endif %}
             </div>
             
