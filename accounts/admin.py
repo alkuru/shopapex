@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
-from .models import UserProfile, UserSession, UserAction, UserFavorite
+from .models import UserProfile, UserSession, UserAction, UserFavorite, UserGarage
 
 
 class UserProfileInline(admin.StackedInline):
@@ -83,3 +83,17 @@ class UserFavoriteAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'product__category']
     search_fields = ['user__username', 'product__name', 'product__article']
     readonly_fields = ['created_at']
+
+
+@admin.register(UserGarage)
+class UserGarageAdmin(admin.ModelAdmin):
+    list_display = ['user', 'vin', 'comment_short', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username', 'vin', 'comment']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def comment_short(self, obj):
+        if obj.comment:
+            return obj.comment[:50] + "..." if len(obj.comment) > 50 else obj.comment
+        return "—"
+    comment_short.short_description = "Комментарий"

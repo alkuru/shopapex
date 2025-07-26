@@ -39,6 +39,7 @@ urlpatterns = [
     path('catalog/', include('catalog.web_urls', namespace='catalog_web')),
     path('vin-search/', include('vin_search.web_urls', namespace='vin_search_web')),
     path('contacts/', include('cms.web_urls', namespace='cms_web')),
+    path('accounts/', include('accounts.urls', namespace='accounts_web')),
     
     path('', include('cms.urls')),  # Главная страница через CMS
 ]

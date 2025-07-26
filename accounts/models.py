@@ -2,40 +2,41 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 class UserProfile(models.Model):
     """Расширение профиля пользователя"""
     USER_TYPES = [
-        ('customer', 'Клиент'),
+        ('client', 'Клиент'),
         ('manager', 'Менеджер'),
         ('admin', 'Администратор'),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    user_type = models.CharField(max_length=20, choices=USER_TYPES, default='customer', verbose_name='Тип пользователя')
-    phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
-    birth_date = models.DateField(blank=True, null=True, verbose_name='Дата рождения')
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Аватар')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    user_type = models.CharField(max_length=20, choices=USER_TYPES, default='client')
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    birth_date = models.DateField(blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     
     # Настройки уведомлений
-    email_notifications = models.BooleanField(default=True, verbose_name='Email уведомления')
-    sms_notifications = models.BooleanField(default=False, verbose_name='SMS уведомления')
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=True)
     
     # Дополнительная информация
-    company = models.CharField(max_length=200, blank=True, verbose_name='Компания')
-    position = models.CharField(max_length=100, blank=True, verbose_name='Должность')
-    notes = models.TextField(blank=True, verbose_name='Заметки')
+    company = models.CharField(max_length=100, blank=True, null=True)
+    position = models.CharField(max_length=100, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
 
     def __str__(self):
-        return f"Профиль {self.user.username}"
+        return f"{self.user.username} - {self.get_user_type_display()}"
 
     @property
     def full_name(self):
@@ -59,12 +60,12 @@ def save_user_profile(sender, instance, **kwargs):
 
 class UserSession(models.Model):
     """Сессии пользователей"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    session_key = models.CharField(max_length=40, verbose_name='Ключ сессии')
-    ip_address = models.GenericIPAddressField(verbose_name='IP адрес')
-    user_agent = models.TextField(verbose_name='User Agent')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-    last_activity = models.DateTimeField(auto_now=True, verbose_name='Последняя активность')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=40)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Сессия пользователя'
@@ -72,30 +73,30 @@ class UserSession(models.Model):
         ordering = ['-last_activity']
 
     def __str__(self):
-        return f"Сессия {self.user.username} ({self.ip_address})"
+        return f"{self.user.username} - {self.ip_address}"
 
 
 class UserAction(models.Model):
     """Действия пользователей (логирование)"""
     ACTION_TYPES = [
-        ('login', 'Вход в систему'),
-        ('logout', 'Выход из системы'),
-        ('order_create', 'Создание заказа'),
-        ('order_update', 'Обновление заказа'),
-        ('product_view', 'Просмотр товара'),
-        ('cart_add', 'Добавление в корзину'),
-        ('cart_remove', 'Удаление из корзины'),
+        ('login', 'Вход'),
+        ('logout', 'Выход'),
+        ('register', 'Регистрация'),
         ('search', 'Поиск'),
-        ('vin_search', 'Поиск по VIN'),
+        ('view_product', 'Просмотр товара'),
+        ('add_to_cart', 'Добавление в корзину'),
+        ('purchase', 'Покупка'),
+        ('add_to_garage', 'Добавление в гараж'),
+        ('remove_from_garage', 'Удаление из гаража'),
     ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, verbose_name='Пользователь')
-    action_type = models.CharField(max_length=20, choices=ACTION_TYPES, verbose_name='Тип действия')
-    description = models.CharField(max_length=200, verbose_name='Описание')
-    ip_address = models.GenericIPAddressField(blank=True, null=True, verbose_name='IP адрес')
-    user_agent = models.TextField(blank=True, verbose_name='User Agent')
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions', null=True, blank=True)
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
+    description = models.TextField()
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, null=True)
     additional_data = models.JSONField(blank=True, null=True, verbose_name='Дополнительные данные')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата действия')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Действие пользователя'
@@ -103,15 +104,14 @@ class UserAction(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        user_name = self.user.username if self.user else 'Анонимный'
-        return f"{user_name} - {self.get_action_type_display()}"
+        return f"{self.user.username if self.user else 'Anonymous'} - {self.get_action_type_display()}"
 
 
 class UserFavorite(models.Model):
     """Избранные товары пользователей"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE, verbose_name='Товар')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    product = models.ForeignKey('catalog.Product', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Избранный товар'
@@ -120,3 +120,25 @@ class UserFavorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.product.name}"
+
+
+class UserGarage(models.Model):
+    """Модель для хранения автомобилей пользователя в гараже"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='garage_vehicles')
+    vin = models.CharField(max_length=17, verbose_name='VIN номер')
+    comment = models.TextField(blank=True, null=True, verbose_name='Комментарий')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'vin']
+        verbose_name = 'Автомобиль в гараже'
+        verbose_name_plural = 'Автомобили в гараже'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.vin}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if len(self.vin) != 17:
+            raise ValidationError('VIN номер должен содержать 17 символов')

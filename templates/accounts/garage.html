@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - ShopApex{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-warehouse"></i> {{ page_title }}
+            </h1>
+            
+            <!-- Кнопка добавления автомобиля -->
+            <div class="mb-4">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+                    <i class="fas fa-plus"></i> Добавить авто в гараж
+                </button>
+            </div>
+            
+            <!-- Список автомобилей в гараже -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Мои автомобили</h5>
+                </div>
+                <div class="card-body">
+                    {% if garage_vehicles %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>VIN номер</th>
+                                        <th>Комментарий</th>
+                                        <th>Дата добавления</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="garageVehiclesList">
+                                    {% for vehicle in garage_vehicles %}
+                                    <tr data-vehicle-id="{{ vehicle.id }}">
+                                        <td><strong>{{ vehicle.vin }}</strong></td>
+                                        <td>{{ vehicle.comment|default:"—" }}</td>
+                                        <td>{{ vehicle.created_at|date:"d.m.Y H:i" }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger remove-vehicle" data-vehicle-id="{{ vehicle.id }}">
+                                                <i class="fas fa-trash"></i> Удалить
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">В вашем гараже пока нет автомобилей</p>
+                            <p class="text-muted">Добавьте свой первый автомобиль, нажав кнопку выше</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления автомобиля -->
+<div class="modal fade" id="addVehicleModal" tabindex="-1" aria-labelledby="addVehicleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addVehicleModalLabel">
+                    <i class="fas fa-plus"></i> Добавить авто в гараж
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addVehicleForm">
+                    <div class="mb-3">
+                        <label for="vinInput" class="form-label">VIN номер *</label>
+                        <input type="text" class="form-control" id="vinInput" name="vin" 
+                               placeholder="Введите VIN номер (17 символов)" maxlength="17" required>
+                        <div class="form-text">VIN номер должен содержать ровно 17 символов</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="commentInput" class="form-label">Комментарий</label>
+                        <textarea class="form-control" id="commentInput" name="comment" 
+                                  rows="3" placeholder="Например: Моя основная машина"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+                <button type="button" class="btn btn-primary" id="saveVehicleBtn">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Уведомления -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addVehicleForm = document.getElementById('addVehicleForm');
+    const saveVehicleBtn = document.getElementById('saveVehicleBtn');
+    const vinInput = document.getElementById('vinInput');
+    const commentInput = document.getElementById('commentInput');
+    const garageVehiclesList = document.getElementById('garageVehiclesList');
+    
+    // Автоматическое преобразование VIN в верхний регистр
+    vinInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+    
+    // Добавление автомобиля в гараж
+    saveVehicleBtn.addEventListener('click', function() {
+        const vin = vinInput.value.trim();
+        const comment = commentInput.value.trim();
+        
+        if (!vin) {
+            showNotification('Ошибка', 'VIN номер не может быть пустым', 'error');
+            return;
+        }
+        
+        if (vin.length !== 17) {
+            showNotification('Ошибка', 'VIN номер должен содержать 17 символов', 'error');
+            return;
+        }
+        
+        // Отправляем запрос
+        fetch('{% url "accounts_web:add_vehicle_to_garage" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                vin: vin,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Успех', 'Автомобиль добавлен в гараж', 'success');
+                
+                // Добавляем новую строку в таблицу
+                addVehicleToTable(data.vehicle);
+                
+                // Очищаем форму и закрываем модальное окно
+                addVehicleForm.reset();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addVehicleModal'));
+                modal.hide();
+            } else {
+                showNotification('Ошибка', data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка', 'Произошла ошибка при добавлении автомобиля', 'error');
+        });
+    });
+    
+    // Удаление автомобиля из гаража
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-vehicle') || e.target.closest('.remove-vehicle')) {
+            const button = e.target.classList.contains('remove-vehicle') ? e.target : e.target.closest('.remove-vehicle');
+            const vehicleId = button.dataset.vehicleId;
+            
+            if (confirm('Вы уверены, что хотите удалить этот автомобиль из гаража?')) {
+                fetch(`{% url "accounts_web:remove_vehicle_from_garage" 0 %}`.replace('0', vehicleId), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Успех', 'Автомобиль удален из гаража', 'success');
+                        
+                        // Удаляем строку из таблицы
+                        const row = document.querySelector(`tr[data-vehicle-id="${vehicleId}"]`);
+                        if (row) {
+                            row.remove();
+                        }
+                        
+                        // Если таблица пуста, показываем сообщение
+                        if (garageVehiclesList.children.length === 0) {
+                            location.reload(); // Перезагружаем страницу для показа пустого состояния
+                        }
+                    } else {
+                        showNotification('Ошибка', data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Ошибка', 'Произошла ошибка при удалении автомобиля', 'error');
+                });
+            }
+        }
+    });
+    
+    // Функция добавления автомобиля в таблицу
+    function addVehicleToTable(vehicle) {
+        const tbody = garageVehiclesList;
+        const row = document.createElement('tr');
+        row.dataset.vehicleId = vehicle.id;
+        
+        row.innerHTML = `
+            <td><strong>${vehicle.vin}</strong></td>
+            <td>${vehicle.comment || '—'}</td>
+            <td>${vehicle.created_at}</td>
+            <td>
+                <button class="btn btn-sm btn-danger remove-vehicle" data-vehicle-id="${vehicle.id}">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </td>
+        `;
+        
+        tbody.insertBefore(row, tbody.firstChild);
+    }
+    
+    // Функция показа уведомлений
+    function showNotification(title, message, type) {
+        const toast = document.getElementById('notificationToast');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+        
+        // Устанавливаем цвет в зависимости от типа
+        toast.className = 'toast';
+        if (type === 'success') {
+            toast.classList.add('bg-success', 'text-white');
+        } else if (type === 'error') {
+            toast.classList.add('bg-danger', 'text-white');
+        }
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    }
+    
+    // Функция получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 
