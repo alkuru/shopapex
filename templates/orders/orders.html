@@ -1,0 +1,592 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .orders-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .orders-header {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .orders-tabs {
+        display: flex;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 20px;
+    }
+    
+    .orders-tab {
+        padding: 12px 24px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        color: #6c757d;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .orders-tab.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+    }
+    
+    .orders-tab:hover {
+        color: #007bff;
+    }
+    
+    .orders-filters {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .filter-select {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        min-width: 150px;
+    }
+    
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .search-input {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+        min-width: 200px;
+    }
+    
+    .search-btn {
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .search-btn:hover {
+        background: #0056b3;
+    }
+    
+    .period-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .period-btn {
+        padding: 6px 12px;
+        border: 1px solid #ced4da;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    
+    .period-btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .orders-summary {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        color: #495057;
+    }
+    
+    .order-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .order-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .order-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-delivered {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-shipped {
+        background: #cce7ff;
+        color: #004085;
+    }
+    
+    .status-cancelled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .order-date {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .order-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .action-btn {
+        padding: 6px 12px;
+        border: 1px solid #ced4da;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        text-decoration: none;
+        color: #495057;
+    }
+    
+    .action-btn:hover {
+        background: #f8f9fa;
+        text-decoration: none;
+        color: #495057;
+    }
+    
+    .order-delivery {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .order-items {
+        padding: 20px;
+    }
+    
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+    
+    .items-table th {
+        background: #f8f9fa;
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 14px;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .items-table td {
+        padding: 12px 8px;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 14px;
+    }
+    
+    .item-article {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .item-article:hover {
+        text-decoration: underline;
+    }
+    
+    .order-total {
+        text-align: right;
+        font-weight: 600;
+        font-size: 16px;
+        color: #495057;
+        padding: 15px 0;
+        border-top: 2px solid #dee2e6;
+    }
+    
+    .documents-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 20px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background-color: #007bff;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 30px;
+    }
+    
+    .page-link {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #007bff;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    
+    .page-link:hover {
+        background: #e9ecef;
+        text-decoration: none;
+    }
+    
+    .page-link.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .empty-orders {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-orders i {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-container">
+    <div class="orders-header">
+        <h1 class="mb-4">Заказы</h1>
+        
+        <!-- Вкладки -->
+        <div class="orders-tabs">
+            <button class="orders-tab {% if status_filter == 'current' %}active{% endif %}" 
+                    onclick="filterOrders('current')">
+                Текущие
+            </button>
+            <button class="orders-tab {% if status_filter == 'completed' %}active{% endif %}" 
+                    onclick="filterOrders('completed')">
+                Выполненные
+            </button>
+            <button class="orders-tab {% if status_filter == 'cancelled' %}active{% endif %}" 
+                    onclick="filterOrders('cancelled')">
+                Отменённые
+            </button>
+            
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Поиск по заказам" 
+                           value="{{ search_query }}" id="searchInput">
+                    <button class="search-btn" onclick="searchOrders()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="documents-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showArchive">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Показать архив</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Фильтры -->
+        <div class="orders-filters">
+            <div class="filter-group">
+                <label class="filter-label">Выбрать период</label>
+                <div class="period-buttons">
+                    <button class="period-btn {% if period == 'month' %}active{% endif %}" 
+                            onclick="setPeriod('month')">Месяц</button>
+                    <button class="period-btn {% if period == '3months' %}active{% endif %}" 
+                            onclick="setPeriod('3months')">3 Месяца</button>
+                    <button class="period-btn {% if period == 'year' %}active{% endif %}" 
+                            onclick="setPeriod('year')">Год</button>
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Способ получения</label>
+                <select class="filter-select" id="deliveryMethod" onchange="filterByDelivery()">
+                    <option value="all" {% if delivery_method == 'all' %}selected{% endif %}>Любой</option>
+                    <option value="pickup" {% if delivery_method == 'pickup' %}selected{% endif %}>Самовывоз</option>
+                    <option value="courier" {% if delivery_method == 'courier' %}selected{% endif %}>Курьер</option>
+                    <option value="post" {% if delivery_method == 'post' %}selected{% endif %}>Почта России</option>
+                    <option value="transport" {% if delivery_method == 'transport' %}selected{% endif %}>Транспортная компания</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Сводка -->
+        <div class="orders-summary">
+            Всего {{ total_orders }} товара на сумму {{ total_amount|floatformat:2 }} ₽
+        </div>
+    </div>
+    
+    <!-- Список заказов -->
+    {% if orders %}
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="order-status status-{{ order.status }}">
+                        {% if order.status == 'delivered' %}ДОСТАВЛЕН
+                        {% elif order.status == 'pending' %}В ОБРАБОТКЕ
+                        {% elif order.status == 'shipped' %}ОТПРАВЛЕН
+                        {% elif order.status == 'cancelled' %}ОТМЕНЁН
+                        {% else %}{{ order.status_display|upper }}{% endif %}
+                    </span>
+                    <span class="order-date">
+                        {{ order.created_at|date:"D, d M"|upper }}
+                    </span>
+                </div>
+                
+                <div class="order-actions">
+                    <a href="#" class="action-btn" title="Скачать документы">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <a href="#" class="action-btn" title="Печать">
+                        <i class="fas fa-print"></i>
+                    </a>
+                    {% if order.status == 'delivered' %}
+                    <a href="#" class="action-btn" title="Оценить доставку">
+                        <i class="fas fa-star"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="order-delivery">
+                {{ order.get_delivery_method_display }} 
+                {% if order.delivery_address %}({{ order.delivery_address }}){% endif %}
+            </div>
+            
+            <div class="order-items">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Производитель</th>
+                            <th>Артикул</th>
+                            <th>Наименование</th>
+                            <th>Статус</th>
+                            <th>Комментарий</th>
+                            <th>Кол-во</th>
+                            <th>Цена, ₽</th>
+                            <th>Стоимость, ₽</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.manufacturer }}</td>
+                            <td>
+                                <a href="#" class="item-article">{{ item.article }}</a>
+                            </td>
+                            <td>{{ item.name }}</td>
+                            <td>
+                                {{ item.item_status }}
+                                <i class="fas fa-info-circle" style="margin-left: 5px; color: #6c757d;"></i>
+                            </td>
+                            <td>{{ item.item_comment|default:"—" }}</td>
+                            <td>{{ item.quantity }} шт.</td>
+                            <td>{{ item.price|floatformat:2 }}</td>
+                            <td>{{ item.cost|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="order-total">
+                    ИТОГО: {{ order.total|floatformat:2 }} ₽
+                </div>
+                
+                <div class="documents-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Показать документы</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1&status={{ status_filter }}&search={{ search_query }}&period={{ period }}&delivery_method={{ delivery_method }}" class="page-link">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}&period={{ period }}&delivery_method={{ delivery_method }}" class="page-link">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="page-link active">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}&period={{ period }}&delivery_method={{ delivery_method }}" class="page-link">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search_query }}&period={{ period }}&delivery_method={{ delivery_method }}" class="page-link">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&search={{ search_query }}&period={{ period }}&delivery_method={{ delivery_method }}" class="page-link">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-orders">
+            <i class="fas fa-shopping-bag"></i>
+            <h3>Заказы не найдены</h3>
+            <p>По вашему запросу заказы не найдены. Попробуйте изменить параметры фильтрации.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function filterOrders(status) {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('status', status);
+    currentUrl.searchParams.delete('page'); // Сброс пагинации
+    window.location.href = currentUrl.toString();
+}
+
+function setPeriod(period) {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('period', period);
+    currentUrl.searchParams.delete('page');
+    window.location.href = currentUrl.toString();
+}
+
+function filterByDelivery() {
+    const deliveryMethod = document.getElementById('deliveryMethod').value;
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('delivery_method', deliveryMethod);
+    currentUrl.searchParams.delete('page');
+    window.location.href = currentUrl.toString();
+}
+
+function searchOrders() {
+    const searchQuery = document.getElementById('searchInput').value;
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('search', searchQuery);
+    currentUrl.searchParams.delete('page');
+    window.location.href = currentUrl.toString();
+}
+
+// Поиск по Enter
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchOrders();
+    }
+});
+</script>
+{% endblock %} 

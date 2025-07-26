@@ -2,106 +2,199 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import OrderStatus, Order, OrderItem, OrderStatusHistory
-
-
-@admin.register(OrderStatus)
-class OrderStatusAdmin(admin.ModelAdmin):
-    list_display = ['name', 'color_preview', 'send_sms', 'send_email', 'show_in_balance', 'is_active']
-    list_filter = ['send_sms', 'send_email', 'show_in_balance', 'is_active']
-    search_fields = ['name', 'action_description']
-    list_editable = ['send_sms', 'send_email', 'show_in_balance', 'is_active']
-    
-    def color_preview(self, obj):
-        return format_html(
-            '<div style="width: 30px; height: 20px; background-color: {}; border: 1px solid #ccc;"></div>',
-            obj.color
-        )
-    color_preview.short_description = "Цвет"
+from .models import Order, OrderItem, OrderDocument, OrderHistory
 
 
 class OrderItemInline(admin.TabularInline):
+    """Inline для товаров в заказе"""
     model = OrderItem
     extra = 0
-    readonly_fields = ['total_price']
-    fields = ['product', 'quantity', 'price', 'total_price']
+    readonly_fields = ['cost']
+    fields = ['manufacturer', 'article', 'name', 'price', 'quantity', 'cost', 'item_status', 'item_comment']
 
 
-class OrderStatusHistoryInline(admin.TabularInline):
-    model = OrderStatusHistory
+class OrderDocumentInline(admin.TabularInline):
+    """Inline для документов заказа"""
+    model = OrderDocument
     extra = 0
-    readonly_fields = ['old_status', 'new_status', 'changed_by', 'created_at']
-    fields = ['old_status', 'new_status', 'changed_by', 'comment', 'created_at']
+    fields = ['document_type', 'file', 'uploaded_at']
+
+
+class OrderHistoryInline(admin.TabularInline):
+    """Inline для истории заказа"""
+    model = OrderHistory
+    extra = 0
+    readonly_fields = ['created_at', 'created_by']
+    fields = ['status_from', 'status_to', 'comment', 'created_at', 'created_by']
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    """Админка для заказов"""
     list_display = [
-        'order_number', 'customer_name', 'customer_phone', 'status_colored', 
-        'total_amount', 'delivery_type', 'is_paid', 'created_at'
+        'order_number', 'user', 'status_display', 'total', 'items_count', 
+        'payment_status', 'delivery_method', 'created_at'
     ]
-    list_filter = ['status', 'delivery_type', 'payment_method', 'is_paid', 'created_at']
-    search_fields = ['order_number', 'customer_name', 'customer_phone', 'customer_email']
-    readonly_fields = ['order_number', 'created_at', 'updated_at']
-    inlines = [OrderItemInline, OrderStatusHistoryInline]
+    list_filter = [
+        'status', 'payment_status', 'delivery_method', 'payment_method', 
+        'created_at', 'delivered_at'
+    ]
+    search_fields = [
+        'order_number', 'user__username', 'user__email', 
+        'delivery_address', 'user_comment'
+    ]
+    readonly_fields = [
+        'id', 'order_number', 'created_at', 'updated_at', 
+        'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at'
+    ]
+    date_hierarchy = 'created_at'
     
     fieldsets = (
-        ('Информация о заказе', {
-            'fields': ('order_number', 'user', 'status', 'total_amount')
-        }),
-        ('Контактная информация', {
-            'fields': ('customer_name', 'customer_phone', 'customer_email')
+        ('Основная информация', {
+            'fields': ('id', 'order_number', 'user', 'status')
         }),
         ('Доставка', {
-            'fields': ('delivery_type', 'delivery_address', 'delivery_cost')
+            'fields': ('delivery_method', 'delivery_address', 'delivery_company', 'delivery_cost')
         }),
         ('Оплата', {
-            'fields': ('payment_method', 'is_paid')
+            'fields': ('payment_method', 'payment_status')
+        }),
+        ('Стоимость', {
+            'fields': ('subtotal', 'discount', 'total')
         }),
         ('Комментарии', {
-            'fields': ('customer_comment', 'admin_comment')
+            'fields': ('user_comment', 'admin_comment'),
+            'classes': ('collapse',)
         }),
         ('Даты', {
-            'fields': ('created_at', 'updated_at', 'completed_at'),
-            'classes': ['collapse']
+            'fields': ('created_at', 'updated_at', 'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at'),
+            'classes': ('collapse',)
         }),
     )
     
-    def status_colored(self, obj):
+    inlines = [OrderItemInline, OrderDocumentInline, OrderHistoryInline]
+    
+    actions = ['mark_as_confirmed', 'mark_as_shipped', 'mark_as_delivered', 'mark_as_cancelled']
+    
+    def status_display(self, obj):
+        """Отображение статуса с цветом"""
+        status_colors = {
+            'pending': '#ffc107',      # Жёлтый
+            'confirmed': '#17a2b8',    # Голубой
+            'in_progress': '#007bff',  # Синий
+            'shipped': '#6f42c1',      # Фиолетовый
+            'delivered': '#28a745',    # Зелёный
+            'cancelled': '#dc3545',    # Красный
+            'returned': '#fd7e14',     # Оранжевый
+        }
+        color = status_colors.get(obj.status, '#6c757d')
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            obj.status.color,
-            obj.status.name
+            '<span style="background-color: {}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">{}</span>',
+            color, obj.status_display
         )
-    status_colored.short_description = "Статус"
+    status_display.short_description = 'Статус'
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user', 'status')
+    def items_count(self, obj):
+        """Количество товаров"""
+        return obj.items_count
+    items_count.short_description = 'Товаров'
     
-    actions = ['mark_as_paid', 'mark_as_unpaid']
+    def mark_as_confirmed(self, request, queryset):
+        """Отметить как подтверждённые"""
+        from django.utils import timezone
+        updated = queryset.update(
+            status='confirmed', 
+            confirmed_at=timezone.now()
+        )
+        self.message_user(request, f'Подтверждено {updated} заказов.')
+    mark_as_confirmed.short_description = 'Отметить как подтверждённые'
     
-    def mark_as_paid(self, request, queryset):
-        queryset.update(is_paid=True)
-        self.message_user(request, f"Заказы отмечены как оплаченные.")
-    mark_as_paid.short_description = "Отметить как оплаченные"
+    def mark_as_shipped(self, request, queryset):
+        """Отметить как отправленные"""
+        from django.utils import timezone
+        updated = queryset.update(
+            status='shipped', 
+            shipped_at=timezone.now()
+        )
+        self.message_user(request, f'Отправлено {updated} заказов.')
+    mark_as_shipped.short_description = 'Отметить как отправленные'
     
-    def mark_as_unpaid(self, request, queryset):
-        queryset.update(is_paid=False)
-        self.message_user(request, f"Заказы отмечены как неоплаченные.")
-    mark_as_unpaid.short_description = "Отметить как неоплаченные"
+    def mark_as_delivered(self, request, queryset):
+        """Отметить как доставленные"""
+        from django.utils import timezone
+        updated = queryset.update(
+            status='delivered', 
+            delivered_at=timezone.now()
+        )
+        self.message_user(request, f'Доставлено {updated} заказов.')
+    mark_as_delivered.short_description = 'Отметить как доставленные'
+    
+    def mark_as_cancelled(self, request, queryset):
+        """Отметить как отменённые"""
+        from django.utils import timezone
+        updated = queryset.update(
+            status='cancelled', 
+            cancelled_at=timezone.now()
+        )
+        self.message_user(request, f'Отменено {updated} заказов.')
+    mark_as_cancelled.short_description = 'Отметить как отменённые'
+    
+    def save_model(self, request, obj, form, change):
+        """Сохранение модели с записью в историю"""
+        if change:  # Если это изменение существующего заказа
+            old_obj = Order.objects.get(pk=obj.pk)
+            if old_obj.status != obj.status:
+                OrderHistory.objects.create(
+                    order=obj,
+                    status_from=old_obj.status,
+                    status_to=obj.status,
+                    created_by=request.user
+                )
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'product', 'quantity', 'price', 'total_price']
-    list_filter = ['order__created_at', 'product__category']
-    search_fields = ['order__order_number', 'product__name', 'product__article']
-    readonly_fields = ['total_price']
+    """Админка для товаров в заказах"""
+    list_display = ['order', 'manufacturer', 'article', 'name', 'quantity', 'price', 'cost', 'item_status']
+    list_filter = ['item_status', 'manufacturer']
+    search_fields = ['order__order_number', 'manufacturer', 'article', 'name']
+    readonly_fields = ['cost']
+    
+    fieldsets = (
+        ('Заказ', {
+            'fields': ('order',)
+        }),
+        ('Товар', {
+            'fields': ('manufacturer', 'article', 'name')
+        }),
+        ('Цена и количество', {
+            'fields': ('price', 'quantity', 'cost')
+        }),
+        ('Статус', {
+            'fields': ('item_status', 'item_comment')
+        }),
+        ('Дополнительно', {
+            'fields': ('supplier', 'warehouse'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
-@admin.register(OrderStatusHistory)
-class OrderStatusHistoryAdmin(admin.ModelAdmin):
-    list_display = ['order', 'old_status', 'new_status', 'changed_by', 'created_at']
-    list_filter = ['old_status', 'new_status', 'created_at']
+@admin.register(OrderDocument)
+class OrderDocumentAdmin(admin.ModelAdmin):
+    """Админка для документов заказов"""
+    list_display = ['order', 'document_type', 'uploaded_at']
+    list_filter = ['document_type', 'uploaded_at']
+    search_fields = ['order__order_number', 'document_type']
+    readonly_fields = ['uploaded_at']
+
+
+@admin.register(OrderHistory)
+class OrderHistoryAdmin(admin.ModelAdmin):
+    """Админка для истории заказов"""
+    list_display = ['order', 'status_from', 'status_to', 'created_by', 'created_at']
+    list_filter = ['status_to', 'created_at']
     search_fields = ['order__order_number', 'comment']
-    readonly_fields = ['created_at']
+    readonly_fields = ['created_at', 'created_by']
+    ordering = ['-created_at']
