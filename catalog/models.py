@@ -42,11 +42,21 @@ class ProductCategory(models.Model):
 
 class Brand(models.Model):
     """Бренды товаров"""
+    RATING_CHOICES = [
+        (5, '5★ Премиум'),
+        (4, '4★ Хорошее'),
+        (3, '3★ Средний'),
+        (2, '2★ Низкий'),
+        (1, '1★ Плохой'),
+    ]
+    
     name = models.CharField(max_length=100, verbose_name='Название бренда')
     logo = models.ImageField(upload_to='brands/', blank=True, null=True, verbose_name='Логотип')
     description = models.TextField(blank=True, verbose_name='Описание бренда')
     website = models.URLField(blank=True, verbose_name='Официальный сайт')
+    online_catalog = models.URLField(blank=True, verbose_name='Онлайн каталог')
     country_iso = models.CharField(max_length=2, blank=True, verbose_name='ISO-код страны (например, pl, de, cn)')
+    rating = models.PositiveIntegerField(choices=RATING_CHOICES, blank=True, null=True, verbose_name='Рейтинг бренда')
     is_active = models.BooleanField(default=True, verbose_name='Активен')
 
     class Meta:

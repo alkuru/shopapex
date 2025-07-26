@@ -34,3 +34,40 @@ def brand_flag(brand_name):
 @register.filter
 def get_item(dictionary, key):
     return dictionary.get(key)
+
+
+@register.filter
+def brand_rating_stars(rating):
+    """
+    Возвращает HTML для отображения рейтинга звездами
+    """
+    if not rating:
+        return ''
+    
+    rating = int(rating)
+    if rating < 1 or rating > 5:
+        return ''
+    
+    # Определяем цвет и символы в зависимости от рейтинга
+    if rating == 5:
+        stars = '★' * 5
+        color = '#FFD700'  # Золотой
+        title = '5★ Премиум'
+    elif rating == 4:
+        stars = '★' * 4 + '☆'
+        color = '#FFA500'  # Оранжевый
+        title = '4★ Хорошее'
+    elif rating == 3:
+        stars = '★' * 3 + '☆' * 2
+        color = '#FFC0CB'  # Розовый
+        title = '3★ Средний'
+    elif rating == 2:
+        stars = '★' * 2 + '☆' * 3
+        color = '#C0C0C0'  # Серебряный
+        title = '2★ Низкий'
+    else:  # rating == 1
+        stars = '★' + '☆' * 4
+        color = '#808080'  # Серый
+        title = '1★ Плохой'
+    
+    return f'<span style="color: {color}; font-size: 14px;" title="{title}">{stars}</span>'

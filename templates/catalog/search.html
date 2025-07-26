@@ -57,10 +57,10 @@
     font-size: 13px;
   }
   .table th:nth-child(1), .table td:nth-child(1) { width: 90px; }
-  .table th:nth-child(2), .table td:nth-child(2) { width: 120px; }
+  .table th:nth-child(2), .table td:nth-child(2) { width: 180px; }
   .table th:nth-child(3), .table td:nth-child(3) { width: 220px; }
-  .table th:nth-child(4), .table td:nth-child(4) { width: 70px; }
-  .table th:nth-child(5), .table td:nth-child(5) { width: 90px; }
+  .table th:nth-child(4), .table td:nth-child(4) { width: 50px; }
+  .table th:nth-child(5), .table td:nth-child(5) { width: 40px; }
   .table th:nth-child(6), .table td:nth-child(6) { width: 160px; }
   .table th:nth-child(7), .table td:nth-child(7) { width: 90px; }
   .table th:nth-child(8), .table td:nth-child(8) { width: 90px; }
@@ -96,6 +96,20 @@
     border-color: #e06666 !important;
     color: #fff !important;
   }
+  
+  /* Стили для фильтров */
+  #brandFilter, #ratingFilter, #priceFilter {
+    width: 240px !important;
+    max-width: 240px !important;
+    min-width: 240px !important;
+  }
+  #brandFilter, #ratingFilter, #priceFilter {
+    border-color: #000 !important;
+  }
+  #brandFilter:focus, #ratingFilter:focus, #priceFilter:focus {
+    border-color: #000 !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25) !important;
+  }
 </style>
 <div class="container my-4">
     <div class="row">
@@ -108,28 +122,66 @@
                 </ol>
             </nav>
             
-            {% if query %}
-                <h1 class="mb-4" style="font-size:1.2rem; font-weight:normal;">
-                  <span class="alert alert-info d-inline-block mb-0 w-100" style="border:none;background:#F5F5DC;color:#222;padding:0.5em 1em; font-size:1rem; max-width: 480px; min-width: 260px; width: 100%; box-sizing: border-box;">
-                    <i class="fas fa-search"></i> Результаты поиска по артикулу: "<strong>{{ query }}</strong>"
-                    <!-- убрано лишнее endif -->
-                  </span>
-                </h1>
-            {% else %}
-                <h1 class="mb-4">{{ page_title }}</h1>
-            {% endif %}
             <!-- Форма поиска -->
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <form method="get" class="d-flex">
-                        <input type="text" name="q" class="form-control me-2" placeholder="Поиск по артикулу..." value="{{ query }}" required>
-                        <button type="submit" class="btn btn-primary search-btn-custom">
-                            <i class="fas fa-search"></i> Найти
-                        </button>
-                        <!-- убраны некорректные if/endif -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <form method="get">
+                        <div class="input-group" style="max-width: 400px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <input type="text" name="q" class="form-control" placeholder="Введите артикул, название, VIN или номер кузова" value="{{ query }}" required style="background-color: #f5f5f5; border: 1px solid #6c757d; border-right: none; border-radius: 0; outline: none;">
+                            <button type="submit" class="btn" style="background-color: #6c757d; color: white; border: 1px solid #6c757d; border-radius: 0; padding: 8px 12px; outline: none;">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
+            
+            {% if query %}
+                <div class="mb-3">
+                  <span class="alert alert-info d-inline-block mb-0" style="border:none;background:#F5F5DC;color:#222;padding:0.3em 0.8em; font-size:0.9rem; max-width: 400px;">
+                    <i class="fas fa-search"></i> Результаты поиска по артикулу: "<strong>{{ query }}</strong>"
+                  </span>
+                </div>
+                
+                <!-- Фильтры -->
+                {% if groups and groups|length > 0 %}
+                <div class="mb-3 d-flex">
+                    <div class="me-5" style="margin-right: 4rem !important;">
+                        <label for="brandFilter" class="form-label" style="font-weight: 500; margin-bottom: 0.5rem; font-size: 0.8rem;">Бренд:</label>
+                        <select id="brandFilter" class="form-select" style="max-width: 240px; background-color: #f8f9fa; border: 1px solid #000; border-radius: 4px; font-size: 0.7rem; padding: 0.3rem 0.5rem; width: 240px !important;">
+                            <option value="">ВСЕ ПРОИЗВОДИТЕЛИ</option>
+                            {% for brand in unique_brands %}
+                                <option value="{{ brand }}" {% if selected_brand == brand %}selected{% endif %}>{{ brand }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="margin-left: 2rem;">
+                        <label for="ratingFilter" class="form-label" style="font-weight: 500; margin-bottom: 0.5rem; font-size: 0.8rem;">Рейтинг бренда:</label>
+                        <select id="ratingFilter" class="form-select" style="max-width: 240px; background-color: #f8f9fa; border: 1px solid #000; border-radius: 4px; font-size: 0.7rem; padding: 0.3rem 0.5rem; width: 240px !important;">
+                            <option value="">ВСЕ РЕЙТИНГИ</option>
+                            <option value="5">5 премиум</option>
+                            <option value="4">4 хорошее</option>
+                            <option value="3">3 средний</option>
+                            <option value="2">2 низкий</option>
+                            <option value="1">1 плохой</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-left: 2rem;">
+                        <label for="priceFilter" class="form-label" style="font-weight: 500; margin-bottom: 0.5rem; font-size: 0.8rem;">Цена:</label>
+                        <select id="priceFilter" class="form-select" style="max-width: 240px; background-color: #f8f9fa; border: 1px solid #000; border-radius: 4px; font-size: 0.7rem; padding: 0.3rem 0.5rem; width: 240px !important;">
+                            <option value="">ВСЕ ЦЕНЫ</option>
+                            {% for price in unique_prices %}
+                                <option value="{{ price }}">{{ price }} ₽</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                </div>
+                {% endif %}
+            {% else %}
+                <h1 class="mb-4">{{ page_title }}</h1>
+            {% endif %}
             
             <!-- Отладочная информация -->
                 {% if error %}
@@ -194,6 +246,11 @@
                                 {% endif %}
                               {% endwith %}
                               <strong>{{ p.brand|default:"-" }}</strong>
+                              {% with rating=brand_ratings|get_item:p.brand %}
+                                {% if rating %}
+                                  <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
+                                {% endif %}
+                              {% endwith %}
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -208,13 +265,23 @@
                           </tr>
                           {% endfor %}
                           {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:''|slugify %}
-                          <tr class="more-btn-row">
+                          <tr class="more-btn-row" data-group="{{ key }}">
                             <td colspan="8">
                               <button class="btn btn-outline-dark btn-sm show-more-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
                                 ещё {{ g.hidden_shown|default:0 }} предложений
                               </button>
-                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand|escapejs }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
-                              <span class="brand-desc-text" data-brand="{{ g.brand|escapejs }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
+                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
+                              {% with website=brand_websites|get_item:g.brand %}
+                                {% if website %}
+                                  <a href="{{ website }}" target="_blank" class="btn btn-outline-dark btn-sm" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Официальный сайт</a>
+                                {% endif %}
+                              {% endwith %}
+                              {% with catalog=brand_catalogs|get_item:g.brand %}
+                                {% if catalog %}
+                                  <a href="{{ catalog }}" target="_blank" class="btn btn-outline-dark btn-sm" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Онлайн каталог</a>
+                                {% endif %}
+                              {% endwith %}
+                              <span class="brand-desc-text" data-brand="{{ g.brand }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
                             </td>
                           </tr>
                           {% for p in g.hidden %}
@@ -227,6 +294,11 @@
                                 {% endif %}
                               {% endwith %}
                               <strong>{{ p.brand|default:"-" }}</strong>
+                              {% with rating=brand_ratings|get_item:p.brand %}
+                                {% if rating %}
+                                  <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
+                                {% endif %}
+                              {% endwith %}
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -279,6 +351,11 @@
                                 {% endif %}
                               {% endwith %}
                               <strong>{{ p.brand|default:"-" }}</strong>
+                              {% with rating=brand_ratings|get_item:p.brand %}
+                                {% if rating %}
+                                  <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
+                                {% endif %}
+                              {% endwith %}
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -293,13 +370,23 @@
                           </tr>
                           {% endfor %}
                           {% with key=g.articul|default_if_none:''|add:'__'|add:g.brand|default_if_none:''|slugify %}
-                          <tr class="more-btn-row">
+                          <tr class="more-btn-row" data-group="{{ key }}">
                             <td colspan="8">
                               <button class="btn btn-outline-dark btn-sm show-more-btn" data-group="{{ key }}" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">
                                 ещё {{ g.hidden_shown|default:0 }} предложений
                               </button>
-                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand|escapejs }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
-                              <span class="brand-desc-text" data-brand="{{ g.brand|escapejs }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
+                              <button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="{{ g.brand }}" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button>
+                              {% with website=brand_websites|get_item:g.brand %}
+                                {% if website %}
+                                  <a href="{{ website }}" target="_blank" class="btn btn-outline-dark btn-sm" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Официальный сайт</a>
+                                {% endif %}
+                              {% endwith %}
+                              {% with catalog=brand_catalogs|get_item:g.brand %}
+                                {% if catalog %}
+                                  <a href="{{ catalog }}" target="_blank" class="btn btn-outline-dark btn-sm" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Онлайн каталог</a>
+                                {% endif %}
+                              {% endwith %}
+                              <span class="brand-desc-text" data-brand="{{ g.brand }}" style="display:none;">{{ brand_descriptions|get_item:g.brand|default:''|linebreaksbr }}</span>
                             </td>
                           </tr>
                           {% for p in g.hidden %}
@@ -312,6 +399,11 @@
                                 {% endif %}
                               {% endwith %}
                               <strong>{{ p.brand|default:"-" }}</strong>
+                              {% with rating=brand_ratings|get_item:p.brand %}
+                                {% if rating %}
+                                  <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
+                                {% endif %}
+                              {% endwith %}
                             </td>
                             <td>{{ p.name|default:"-"|truncatechars:60 }}</td>
                             <td>{{ p.stock_quantity|default:"-" }}</td>
@@ -356,6 +448,10 @@
     </div>
 </div>
 
+{# Скрытые данные для JavaScript #}
+<div id="brandWebsitesData" style="display:none;" data-websites="{{ brand_websites|escapejs }}"></div>
+<div id="brandCatalogsData" style="display:none;" data-catalogs="{{ brand_catalogs|escapejs }}"></div>
+
 {# Модальное окно для описания бренда #}
 <div id="brandDescModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);">
   <div style="background:#fff;max-width:480px;margin:8vh auto;padding:24px 24px 16px 24px;border-radius:8px;box-shadow:0 2px 16px #0002;position:relative;">
@@ -375,33 +471,241 @@ document.addEventListener('click', function (e) {
     const hiddenRows = document.querySelectorAll('.group-' + key + ':not(.collapse-btn-row)');
     if (hiddenRows.length > 0) {
       document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.remove('hidden'));
-      e.target.closest('tr').remove(); // убираем кнопку "ещё предложений"
+      e.target.closest('tr').classList.add('hidden'); // скрываем кнопку "ещё предложений"
+      // Добавляем обработчики к кнопкам "Описание бренда" после показа скрытых предложений
+      addBrandDescHandlers();
     }
   }
   if (e.target.classList.contains('collapse-btn')) {
     const key = e.target.dataset.group;
     document.querySelectorAll('.group-' + key).forEach(tr => tr.classList.add('hidden'));
-    // Восстанавливаем кнопку "ещё предложений"
-    const hiddenCount = document.querySelectorAll('.group-' + key + ':not(.collapse-btn-row)').length;
-    const moreBtnRow = document.createElement('tr');
-    moreBtnRow.className = 'more-btn-row';
-    moreBtnRow.innerHTML = '<td colspan="8"><button class="btn btn-outline-dark btn-sm show-more-btn" data-group="' + key + '" style="font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">ещё ' + hiddenCount + ' предложений</button><button class="btn btn-outline-dark btn-sm brand-desc-btn" data-brand="' + e.target.closest('tr').getAttribute('data-brand') + '" style="margin-left:8px;font-size:10.7px;padding:1.8px 7.2px;height:19.8px;">Описание бренда</button></td>';
-    e.target.closest('tr').insertAdjacentElement('beforebegin', moreBtnRow);
+    // Показываем кнопку "ещё предложений" (она уже существует, просто скрыта)
+    const moreBtnRow = document.querySelector('.more-btn-row[data-group="' + key + '"]');
+    if (moreBtnRow) {
+      moreBtnRow.classList.remove('hidden');
+      // Добавляем обработчики к кнопкам "Описание бренда" после показа
+      addBrandDescHandlers();
+    }
     // НЕ удаляем кнопку "свернуть", просто скрываем её
     e.target.closest('tr').classList.add('hidden');
   }
 });
-document.addEventListener('DOMContentLoaded', function() {
+// Функция для добавления обработчиков к кнопкам "Описание бренда"
+function addBrandDescHandlers() {
   document.querySelectorAll('.brand-desc-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var brand = btn.getAttribute('data-brand');
-      var desc = document.querySelector('.brand-desc-text[data-brand="' + brand + '"]');
-      if (desc) {
-        document.getElementById('brandDescModalContent').innerHTML = desc.innerHTML;
-        document.getElementById('brandDescModal').style.display = 'block';
+    // Удаляем старые обработчики, если они есть
+    btn.removeEventListener('click', brandDescClickHandler);
+    // Добавляем новый обработчик
+    btn.addEventListener('click', brandDescClickHandler);
+  });
+}
+
+// Обработчик клика для кнопки "Описание бренда"
+function brandDescClickHandler() {
+  var brand = this.getAttribute('data-brand');
+  
+  // Ищем элемент с описанием, используя более гибкий поиск
+  var descElements = document.querySelectorAll('.brand-desc-text');
+  var desc = null;
+  
+  for (var i = 0; i < descElements.length; i++) {
+    var elementBrand = descElements[i].getAttribute('data-brand');
+    if (elementBrand === brand) {
+      desc = descElements[i];
+      break;
+    }
+  }
+  
+  var content = '';
+  if (desc && desc.innerHTML.trim() !== '') {
+    content = desc.innerHTML;
+  } else {
+    content = '<p style="color: #666; font-style: italic;">Описание бренда отсутствует</p>';
+  }
+  document.getElementById('brandDescModalContent').innerHTML = content;
+  document.getElementById('brandDescModal').style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Добавляем обработчики при загрузке страницы
+  addBrandDescHandlers();
+  
+  // Функция для применения фильтров
+  function applyFilters() {
+    const selectedBrand = document.getElementById('brandFilter').value;
+    const selectedRating = document.getElementById('ratingFilter').value;
+    const selectedPrice = document.getElementById('priceFilter').value;
+    const tableRows = document.querySelectorAll('.offers-table tbody tr');
+    
+    console.log('=== FILTER DEBUG START ===');
+    console.log('Selected filters:', {
+      brand: selectedBrand,
+      rating: selectedRating,
+      price: selectedPrice
+    });
+    console.log('Total rows found:', tableRows.length);
+    
+    // Проверяем каждый ряд отдельно
+    tableRows.forEach(function(row, index) {
+      const brandCell = row.querySelector('td:nth-child(2)'); // Колонка "Бренд"
+      
+      console.log(`Row ${index}:`, {
+        hasBrandCell: !!brandCell,
+        brandText: brandCell ? brandCell.textContent.trim() : 'N/A'
+      });
+      
+      if (brandCell) {
+        const brandText = brandCell.textContent.trim();
+        const brandName = brandText.split('\n')[0].trim(); // Берем только название бренда
+        
+        // Проверяем фильтр по бренду
+        let brandMatch = selectedBrand === '' || brandName === selectedBrand;
+        
+        // Проверяем фильтр по рейтингу
+        let ratingMatch = true;
+        if (selectedRating !== '') {
+          const ratingStars = brandCell.querySelector('span[style*="color"]');
+          if (ratingStars) {
+            const starText = ratingStars.textContent;
+            const filledStars = (starText.match(/★/g) || []).length;
+            const emptyStars = (starText.match(/☆/g) || []).length;
+            const totalStars = filledStars + emptyStars;
+            const rating = totalStars - emptyStars; // Рейтинг = заполненные звезды
+            ratingMatch = rating === parseInt(selectedRating);
+          } else {
+            ratingMatch = false; // Если нет звезд, то не подходит под рейтинг
+          }
+        }
+        
+        // Проверяем фильтр по цене
+        let priceMatch = true;
+        if (selectedPrice !== '') {
+          const priceCell = row.querySelector('td:nth-child(7)'); // Колонка "Цена"
+          if (priceCell) {
+            const priceText = priceCell.textContent.trim();
+            const priceRegex = priceText.match(/(\d+(?:\.\d+)?)/);
+            if (priceRegex) {
+              const rowPrice = parseFloat(priceRegex[1]);
+              const selectedPriceNum = parseFloat(selectedPrice);
+              priceMatch = rowPrice === selectedPriceNum;
+            } else {
+              priceMatch = false;
+            }
+          } else {
+            priceMatch = false;
+          }
+        }
+        
+
+        
+        // Показываем/скрываем строку в зависимости от фильтров
+        // Фильтры работают независимо друг от друга
+        let shouldShow = false;
+        
+        // Если не выбран ни один фильтр, показываем все
+        if (selectedBrand === '' && selectedRating === '' && selectedPrice === '') {
+          shouldShow = true;
+        } else {
+          // Проверяем каждый фильтр отдельно
+          if (selectedBrand !== '' && brandMatch) {
+            shouldShow = true;
+          }
+          if (selectedRating !== '' && ratingMatch) {
+            shouldShow = true;
+          }
+          if (selectedPrice !== '' && priceMatch) {
+            shouldShow = true;
+          }
+        }
+        
+        if (shouldShow) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+        
+        console.log(`Row ${index} final result:`, {
+          brandMatch,
+          ratingMatch,
+          priceMatch,
+          shouldShow,
+          display: shouldShow ? 'show' : 'hide',
+          selectedBrand,
+          selectedRating,
+          selectedPrice
+        });
+      } else {
+        // Для строк без бренда (кнопки, заголовки) проверяем соседние строки
+        const prevRow = row.previousElementSibling;
+        const nextRow = row.nextElementSibling;
+        let shouldShow = selectedBrand === '' && selectedRating === '' && selectedPrice === ''; // По умолчанию показываем только если выбраны все фильтры
+        
+        if (prevRow) {
+          const prevBrandCell = prevRow.querySelector('td:nth-child(2)');
+          if (prevBrandCell) {
+            const prevBrandText = prevBrandCell.textContent.trim();
+            const prevBrandName = prevBrandText.split('\n')[0].trim();
+            // Проверяем, есть ли видимые строки в предыдущей группе
+            let hasVisibleRows = false;
+            let currentRow = prevRow;
+            while (currentRow && currentRow.querySelector('td:nth-child(2)') && 
+                   currentRow.querySelector('td:nth-child(2)').textContent.trim().split('\n')[0].trim() === prevBrandName) {
+              if (currentRow.style.display !== 'none') {
+                hasVisibleRows = true;
+                break;
+              }
+              currentRow = currentRow.previousElementSibling;
+            }
+            if (hasVisibleRows) {
+              shouldShow = true;
+            }
+          }
+        }
+        
+        if (nextRow && !shouldShow) {
+          const nextBrandCell = nextRow.querySelector('td:nth-child(2)');
+          if (nextBrandCell) {
+            const nextBrandText = nextBrandCell.textContent.trim();
+            const nextBrandName = nextBrandText.split('\n')[0].trim();
+            // Проверяем, есть ли видимые строки в следующей группе
+            let hasVisibleRows = false;
+            let currentRow = nextRow;
+            while (currentRow && currentRow.querySelector('td:nth-child(2)') && 
+                   currentRow.querySelector('td:nth-child(2)').textContent.trim().split('\n')[0].trim() === nextBrandName) {
+              if (currentRow.style.display !== 'none') {
+                hasVisibleRows = true;
+                break;
+              }
+              currentRow = currentRow.nextElementSibling;
+            }
+            if (hasVisibleRows) {
+              shouldShow = true;
+            }
+          }
+        }
+        
+        row.style.display = shouldShow ? '' : 'none';
       }
     });
-  });
+  }
+
+  // Обработчики для фильтров
+  const brandFilter = document.getElementById('brandFilter');
+  const ratingFilter = document.getElementById('ratingFilter');
+  const priceFilter = document.getElementById('priceFilter');
+  
+  if (brandFilter) {
+    brandFilter.addEventListener('change', applyFilters);
+  }
+  
+  if (ratingFilter) {
+    ratingFilter.addEventListener('change', applyFilters);
+  }
+  
+  if (priceFilter) {
+    priceFilter.addEventListener('change', applyFilters);
+  }
+  
   document.getElementById('brandDescModalClose').onclick = function() {
     document.getElementById('brandDescModal').style.display = 'none';
   };

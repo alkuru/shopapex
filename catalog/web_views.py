@@ -220,6 +220,63 @@ def product_search(request):
 
     # Словарь описаний брендов для быстрого доступа в шаблоне
     brand_descriptions = {b.name: b.description for b in Brand.objects.filter(is_active=True) if b.description}
+    # Словарь официальных сайтов брендов для быстрого доступа в шаблоне
+    brand_websites = {b.name: b.website for b in Brand.objects.filter(is_active=True) if b.website}
+    # Словарь онлайн каталогов брендов для быстрого доступа в шаблоне
+    brand_catalogs = {b.name: b.online_catalog for b in Brand.objects.filter(is_active=True) if b.online_catalog}
+    # Словарь рейтингов брендов для быстрого доступа в шаблоне
+    brand_ratings = {b.name: b.rating for b in Brand.objects.filter(is_active=True) if b.rating}
+
+    # Создаем уникальный список брендов из групп
+    unique_brands = []
+    if groups:
+        seen_brands = set()
+        for g in groups:
+            if g.get('brand') and g['brand'] not in seen_brands:
+                unique_brands.append(g['brand'])
+                seen_brands.add(g['brand'])
+        # Сортируем бренды по алфавиту
+        unique_brands.sort()
+
+    # Создаем уникальный список сроков поставки из групп
+    unique_delivery_times = []
+    if groups:
+        seen_delivery_times = set()
+        for g in groups:
+            for p in g.get('visible', []) + g.get('hidden', []):
+                delivery_time = p.get('delivery_time')
+                if delivery_time and delivery_time not in seen_delivery_times:
+                    try:
+                        # Пытаемся преобразовать в число для сортировки
+                        delivery_days = int(delivery_time)
+                        unique_delivery_times.append(delivery_days)
+                        seen_delivery_times.add(delivery_time)
+                    except (ValueError, TypeError):
+                        # Если не число, добавляем как есть
+                        unique_delivery_times.append(delivery_time)
+                        seen_delivery_times.add(delivery_time)
+        # Сортируем сроки поставки по числовому значению
+        unique_delivery_times.sort(key=lambda x: int(x) if isinstance(x, (int, str)) and str(x).isdigit() else float('inf'))
+
+    # Создаем уникальный список цен из групп
+    unique_prices = []
+    if groups:
+        seen_prices = set()
+        for g in groups:
+            for p in g.get('visible', []) + g.get('hidden', []):
+                price = p.get('price')
+                if price and price not in seen_prices:
+                    try:
+                        # Пытаемся преобразовать в число для сортировки
+                        price_num = float(price)
+                        unique_prices.append(price_num)
+                        seen_prices.add(price)
+                    except (ValueError, TypeError):
+                        # Если не число, добавляем как есть
+                        unique_prices.append(price)
+                        seen_prices.add(price)
+        # Сортируем цены по числовому значению
+        unique_prices.sort(key=lambda x: float(x) if isinstance(x, (int, float, str)) and str(x).replace('.', '').isdigit() else float('inf'))
 
     context = {
         'groups': groups,
@@ -231,6 +288,13 @@ def product_search(request):
         'brands_list': brands_list,
         'show_brand_select': show_brand_select,
         'brand_descriptions': brand_descriptions,
+        'brand_websites': brand_websites,
+        'brand_catalogs': brand_catalogs,
+        'brand_ratings': brand_ratings,
+        'selected_brand': brand,  # Передаем выбранный бренд для фильтра
+        'unique_brands': unique_brands,  # Уникальный список брендов для фильтра
+        'unique_delivery_times': unique_delivery_times,  # Уникальный список сроков поставки для фильтра
+        'unique_prices': unique_prices,  # Уникальный список цен для фильтра
     }
     return render(request, 'catalog/search.html', context)
 

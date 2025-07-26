@@ -20,9 +20,42 @@ from .supplier_models import (
 # Регистрация Brand
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ['name', 'is_active']
+    list_display = ['name', 'rating_display', 'is_active']
     search_fields = ['name']
     list_editable = ['is_active']
+    list_filter = ['rating', 'is_active']
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'logo', 'description', 'is_active')
+        }),
+        ('Рейтинг и контакты', {
+            'fields': ('rating', 'website', 'online_catalog', 'country_iso')
+        }),
+    )
+    
+    def rating_display(self, obj):
+        if obj.rating:
+            stars = '★' * obj.rating + '☆' * (5 - obj.rating)
+            rating_text = dict(Brand.RATING_CHOICES)[obj.rating]
+            return format_html(
+                '<span style="color: {}; font-size: 16px;" title="{}">{}</span>',
+                self.get_rating_color(obj.rating),
+                rating_text,
+                stars
+            )
+        return "-"
+    rating_display.short_description = "Рейтинг"
+    
+    def get_rating_color(self, rating):
+        colors = {
+            5: '#FFD700',  # Золотой для премиум
+            4: '#FFA500',  # Оранжевый для хорошего
+            3: '#FFC0CB',  # Розовый для среднего
+            2: '#C0C0C0',  # Серебряный для низкого
+            1: '#808080',  # Серый для плохого
+        }
+        return colors.get(rating, '#C0C0C0')
 
 
 
