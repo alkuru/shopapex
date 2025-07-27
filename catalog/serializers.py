@@ -5,7 +5,8 @@ from .models import (
     SupplierProduct, SupplierSyncLog,
     SupplierStaff, SupplierDeliveryMethod, SupplierOrderStatus,
     SupplierClientGroup, SupplierClient, SupplierOrder,
-    SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction
+    SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction,
+    OemNumber, ProductOem, AutoKontinentProduct
 )
 
 
@@ -262,3 +263,24 @@ class SupplierSearchResultSerializer(serializers.Serializer):
     message = serializers.CharField()
     brands = serializers.ListField(required=False)
     products = serializers.ListField(required=False)
+
+
+class OemNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OemNumber
+        fields = ['id', 'number', 'brand', 'description']
+
+
+class ProductOemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductOem
+        fields = ['id', 'product', 'oem_number']
+
+
+class AutoKontinentProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AutoKontinentProduct
+        fields = [
+            'id', 'brand', 'article', 'name', 'stock_spb', 'stock_msk', 
+            'price', 'multiplicity', 'unit', 'updated_at'
+        ]

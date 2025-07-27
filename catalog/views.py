@@ -50,7 +50,8 @@ from .models import (
     Supplier, SupplierProduct, SupplierSyncLog,
     SupplierStaff, SupplierDeliveryMethod, SupplierOrderStatus,
     SupplierClientGroup, SupplierClient, SupplierOrder,
-    SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction
+    SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction,
+    OemNumber, ProductOem, AutoKontinentProduct
 )
 from .serializers import (
     ProductCategorySerializer, BrandSerializer, ProductSerializer,
@@ -62,7 +63,8 @@ from .serializers import (
     SupplierClientSerializer, SupplierOrderSerializer,
     SupplierOrderItemSerializer, SupplierOrderHistorySerializer,
     SupplierBalanceTransactionSerializer, SupplierEntitiesSyncSerializer,
-    SupplierSearchSerializer, SupplierSearchResultSerializer
+    SupplierSearchSerializer, SupplierSearchResultSerializer,
+    OemNumberSerializer, ProductOemSerializer, AutoKontinentProductSerializer
 )
 
 
@@ -941,3 +943,19 @@ class ProductAnalogsView(APIView):
                 'success': False,
                 'message': f'Ошибка поиска аналогов: {str(e)}'
             }, status=500)
+
+
+class OemNumberViewSet(viewsets.ModelViewSet):
+    queryset = OemNumber.objects.all()
+    serializer_class = OemNumberSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+class ProductOemViewSet(viewsets.ModelViewSet):
+    queryset = ProductOem.objects.all()
+    serializer_class = ProductOemSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+class AutoKontinentProductViewSet(viewsets.ModelViewSet):
+    queryset = AutoKontinentProduct.objects.all()
+    serializer_class = AutoKontinentProductSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]

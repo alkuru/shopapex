@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import web_views
 
 app_name = 'catalog'
 
@@ -20,10 +21,13 @@ router.register(r'supplier-client-groups', views.SupplierClientGroupViewSet)
 router.register(r'supplier-clients', views.SupplierClientViewSet)
 router.register(r'supplier-orders', views.SupplierOrderViewSet)
 router.register(r'supplier-balance-transactions', views.SupplierBalanceTransactionViewSet)
+router.register(r'oem-numbers', views.OemNumberViewSet)
+router.register(r'product-oems', views.ProductOemViewSet)
+router.register(r'autokontinent-products', views.AutoKontinentProductViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('search/', views.ProductSearchView.as_view(), name='product_search'),
+    path('search/', web_views.product_search, name='product_search'),
     path('advanced-search/', views.AdvancedSearchView.as_view(), name='advanced_search'),
     path('quick-search/', views.quick_search_view, name='quick_search'),
     path('supplier-api-search/', views.supplier_api_search_view, name='supplier_api_search'),

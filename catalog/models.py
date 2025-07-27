@@ -229,3 +229,28 @@ from .supplier_models import *
 
 # Импорт моделей умного поиска для регистрации в ORM
 from .smart_search_models import SearchCache, SearchHistory, SavedProduct, OrderedProduct
+
+
+class AutoKontinentProduct(models.Model):
+    """Товары из прайса АвтоКонтинента"""
+    brand = models.CharField(max_length=100, verbose_name='Бренд')
+    article = models.CharField(max_length=100, verbose_name='Код товара')
+    name = models.CharField(max_length=300, verbose_name='Наименование товара')
+    stock_spb = models.PositiveIntegerField(default=0, verbose_name='Кол-во СПб')
+    stock_msk = models.PositiveIntegerField(default=0, verbose_name='Кол-во МСК')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена')
+    multiplicity = models.PositiveIntegerField(default=1, verbose_name='Кратность')
+    unit = models.CharField(max_length=20, verbose_name='Ед. изм.')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    class Meta:
+        verbose_name = 'Товар АвтоКонтинента'
+        verbose_name_plural = 'Товары АвтоКонтинента'
+        indexes = [
+            models.Index(fields=['article']),
+            models.Index(fields=['brand']),
+        ]
+        unique_together = ['brand', 'article']
+
+    def __str__(self):
+        return f"{self.brand} {self.article} {self.name}"

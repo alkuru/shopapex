@@ -28,6 +28,8 @@ services:
     command: uvicorn main:app --reload --host 0.0.0.0 --port 8001
     ports:
       - "8001:8001"
+    volumes:
+      - ../fastapi_test:/app
     depends_on:
       - db
 

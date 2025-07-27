@@ -111,21 +111,29 @@ def product_detail(request, product_id):
 def product_search(request):
     def price_label(pn: str) -> str:
         pn = (pn or '').lower()
+        # Для АвтоКонтинента: новые названия складов
+        if 'цс ак' in pn:
+            return 'ЦС АК'
+        if 'цс акмск' in pn:
+            return 'ЦС АКМСК'
         # Для автоспутник: оставить только 'цс воронеж', 'цс краснодар', 'цс ростов'
         if 'цс воронеж' in pn:
-            return 'цс воронеж'
+            return 'ЦС-ВР'
         if 'цс краснодар' in pn:
-            return 'цс краснодар'
+            return 'ЦС-КР'
         if 'цс ростов' in pn:
-            return 'цс ростов'
+            return 'ЦС-РВ'
         if 'сторон' in pn:
-            return 'Сторонний склад'
+            return 'СТ-СК'
         if 'транз' in pn:
             return 'Транзит'
         return pn or ''
+    
     from catalog.brand_country_map import brand_country_iso
-    from catalog.sputnik_api import get_sputnik_brands_full, search_sputnik_products
-    query = request.GET.get('q', '')
+    from catalog.sputnik_api import get_sputnik_brands_full
+    import requests
+    
+    query = request.GET.get('q', '') or request.GET.get('article', '')  # Поддержка обоих параметров
     brand = request.GET.get('brand', '').strip()
     sort = request.GET.get('sort')
     order = request.GET.get('order', 'asc')
@@ -133,44 +141,67 @@ def product_search(request):
     error = None
     brands_list = []
     show_brand_select = False
+    
     if query:
         if not brand:
+            # Если бренд не указан, получаем список брендов для выбора
             brands_list = get_sputnik_brands_full(query)
             show_brand_select = True
         else:
-            raw = search_sputnik_products(query, brand)
-            if isinstance(raw, dict):
-                items = raw.get('data', [])
-            else:
-                items = raw or []
-            items = [p for p in items if isinstance(p, dict)]
-            print('DEBUG: Sputnik API result:', items)
-            if items:
-                for item in items:
-                    item['price_label'] = price_label(item.get('price_name'))
-                    item['is_analog'] = bool(item.get('analog'))
-                    products.append({
-                        'name': item.get('name'),
-                        'article': item.get('articul'),
-                        'brand': item.get('brand', {}).get('name') if isinstance(item.get('brand'), dict) else item.get('brand'),
-                        'brand_obj': item.get('brand'),
-                        'description': '',
-                        'stock_quantity': item.get('quantity'),
-                        'delivery_time': item.get('delivery_day'),
-                        'warehouse': item.get('price_name'),
-                        'price': item.get('price'),
-                        'supplier': 'Авто-Спутник',
-                        'is_analog': item['is_analog'],
-                        'price_label': item['price_label'],
-                        'delivery_date': item.get('delivery_date'),
-                        'unit': item.get('unit'),
-                        'min': item.get('min'),
-                        'cratnost': item.get('cratnost'),
-                        'vozvrat': item.get('vozvrat'),
-                        'official_diler': item.get('official_diler'),
-                    })
-            else:
-                error = "Нет данных от АвтоСпутник."
+            # Используем новый объединённый поиск
+            try:
+                # Запрос к нашему объединённому API
+                api_url = "http://fastapi:8001/unified_search"
+                params = {'article': query, 'brand': brand}
+                
+                response = requests.get(api_url, params=params, timeout=30)
+                if response.status_code == 200:
+                    data = response.json()
+                    items = data.get('data', [])
+                    print('DEBUG: Unified API result:', items)
+                    
+                    if items:
+                        for item in items:
+                            # Определяем источник товара
+                            source = item.get('source', 'unknown')
+                            if source == 'autokontinent_db':
+                                supplier = 'АвтоКонтинент'
+                                price_label_val = price_label(item.get('warehouse', ''))
+                                is_analog = False  # АвтоКонтинент не имеет аналогов в базе
+                            else:
+                                supplier = 'Авто-Спутник'
+                                price_label_val = price_label(item.get('warehouse', ''))
+                                is_analog = bool(item.get('analog', False))
+                            
+                            products.append({
+                                'name': item.get('description', ''),
+                                'article': item.get('article', ''),
+                                'brand': item.get('brand', ''),
+                                'brand_obj': {'name': item.get('brand', '')},
+                                'description': item.get('description', ''),
+                                'stock_quantity': item.get('availability', 0),
+                                'delivery_time': item.get('delivery_time', ''),
+                                'warehouse': item.get('warehouse', ''),
+                                'price': item.get('price', 0),
+                                'supplier': supplier,
+                                'is_analog': is_analog,
+                                'price_label': price_label_val,
+                                'delivery_date': item.get('delivery_date', ''),
+                                'unit': item.get('unit', ''),
+                                'min': item.get('min', 1),
+                                'cratnost': item.get('cratnost', 1),
+                                'vozvrat': item.get('vozvrat', False),
+                                'official_diler': item.get('official_diler', False),
+                                'source': source,  # Добавляем источник для отладки
+                            })
+                    else:
+                        error = "Товары не найдены."
+                else:
+                    error = f"Ошибка API: {response.status_code}"
+                    
+            except Exception as e:
+                print(f"DEBUG: Error calling unified API: {e}")
+                error = f"Ошибка соединения с API: {str(e)}"
 
     def parse_delivery_time(val):
         import datetime, re
@@ -200,7 +231,7 @@ def product_search(request):
     from catalog.utils_sputnik import group_offers
     groups = []
     if products:
-        original_groups = group_offers(products)
+        original_groups = group_offers(products, search_brand=brand)
         query_art = request.GET.get("q", "") or query
         query_brand = request.GET.get("brand", "") or brand
         def is_main_group(g):
@@ -209,14 +240,63 @@ def product_search(request):
                 g["articul"].lower() == (query_art or "").lower() and
                 g["brand"].lower() == (query_brand or "").lower()
             )
+        
+        def has_autokontinent_items(g):
+            """Проверяет, есть ли в группе товары AutoKontinent"""
+            for item in g.get('visible', []) + g.get('hidden', []):
+                if item.get('source') == 'autokontinent_db':
+                    return True
+            return False
+        
+        def has_autokontinent_in_stock(g):
+            """Проверяет, есть ли в группе товары AutoKontinent в наличии"""
+            for item in g.get('visible', []) + g.get('hidden', []):
+                if (item.get('source') == 'autokontinent_db' and 
+                    item.get('availability', 0) > 0):
+                    return True
+            return False
+        
         def sort_groups(groups):
-            return sorted(groups, key=lambda g: (0 if is_main_group(g) else 1))
+            # Сортируем группы по приоритету:
+            # 1. Группы с товарами AutoKontinent в наличии
+            # 2. Группы с товарами AutoKontinent (не в наличии)
+            # 3. Остальные группы (AutoSputnik и др.)
+            
+            autokontinent_in_stock_groups = []
+            autokontinent_other_groups = []
+            other_groups = []
+            
+            for g in groups:
+                if has_autokontinent_in_stock(g):
+                    autokontinent_in_stock_groups.append(g)
+                elif has_autokontinent_items(g):
+                    autokontinent_other_groups.append(g)
+                else:
+                    other_groups.append(g)
+            
+            # Внутри каждой категории сортируем по главным группам
+            def sort_within_category(groups_list):
+                return sorted(groups_list, key=lambda g: (0 if is_main_group(g) else 1))
+            
+            # Возвращаем группы в порядке приоритета
+            result = []
+            result.extend(sort_within_category(autokontinent_in_stock_groups))
+            result.extend(sort_within_category(autokontinent_other_groups))
+            result.extend(sort_within_category(other_groups))
+            
+            return result
         groups = sort_groups(original_groups)
 
     # Отладочная информация
     print(f"DEBUG: query = '{query}'")
     print(f"DEBUG: groups count = {len(groups)}")
     print(f"DEBUG: request.GET = {dict(request.GET)}")
+    
+    # Дополнительная отладка групп
+    for i, group in enumerate(groups):
+        print(f"DEBUG: Group {i}: articul='{group.get('articul')}', brand='{group.get('brand')}', visible={len(group.get('visible', []))}, hidden={len(group.get('hidden', []))}, hidden_shown={group.get('hidden_shown', 0)}")
+        if len(group.get('hidden', [])) > 0:
+            print(f"DEBUG: Hidden items in group {i}: {[item.get('article', '') + ' ' + item.get('brand', '') for item in group.get('hidden', [])]}")
 
     # Словарь описаний брендов для быстрого доступа в шаблоне
     brand_descriptions = {b.name: b.description for b in Brand.objects.filter(is_active=True) if b.description}
