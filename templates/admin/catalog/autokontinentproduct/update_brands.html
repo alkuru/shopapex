@@ -82,7 +82,7 @@
             </ul>
         </div>
         
-        <form method="post">
+        <form method="post" id="update-brands-form">
             {% csrf_token %}
             
             <div class="form-row">
@@ -106,9 +106,41 @@
             </div>
             
             <div class="submit-row">
-                <input type="submit" value="Обновить бренды" />
+                <input type="submit" value="Обновить бренды" id="submit-btn" />
             </div>
         </form>
+        <div id="progress-container" style="display:none; margin-top:20px;">
+            <div style="font-weight:bold; margin-bottom:5px;">Прогресс обновления брендов:</div>
+            <div style="background:#eee; border-radius:4px; height:24px; width:100%;">
+                <div id="progress-bar" style="background:#28a745; height:24px; width:0%; border-radius:4px; transition:width 0.3s;"></div>
+            </div>
+            <div id="progress-text" style="margin-top:5px; font-size:14px;">0%</div>
+        </div>
+        <script>
+        document.getElementById('update-brands-form').addEventListener('submit', function(e) {
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').innerText = '0%';
+            setTimeout(pollProgress, 700);
+        });
+        function pollProgress() {
+            fetch(window.location.pathname.replace('update-brands/', 'update-brands-progress/'))
+                .then(r => r.json())
+                .then(data => {
+                    let p = data.progress || 0;
+                    document.getElementById('progress-bar').style.width = p + '%';
+                    document.getElementById('progress-text').innerText = p + '%';
+                    if (p < 100) {
+                        setTimeout(pollProgress, 700);
+                    } else {
+                        document.getElementById('progress-text').innerText = 'Готово!';
+                        setTimeout(() => { window.location.reload(); }, 1200);
+                    }
+                })
+                .catch(() => setTimeout(pollProgress, 1000));
+        }
+        </script>
     </div>
 </div>
 {% endblock %} 

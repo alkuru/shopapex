@@ -1,6 +1,7 @@
 from collections import defaultdict
 
-VISIBLE_LIMIT = 3  # показываем 3 предложения
+VISIBLE_LIMIT = 3  # показываем 3 предложения для аналогов
+MAIN_VISIBLE_LIMIT = 5  # показываем 5 предложений для главного артикула
 HIDDEN_LIMIT = 10  # максимум под кнопкой
 
 def group_offers(items, search_brand=None):
@@ -8,7 +9,7 @@ def group_offers(items, search_brand=None):
     items – это полный список из API (уже без фильтрации по our).
     Группируем по (articul, brand.name).
     Возвращаем список групп с visible/hidden.
-    Теперь visible всегда только 1 предложение (первое), остальные в hidden.
+    Для главного артикула показываем 5 товаров, для аналогов - 3.
     Аналоги сортируются по алфавиту бренда.
     """
     groups = defaultdict(list)
@@ -55,17 +56,28 @@ def group_offers(items, search_brand=None):
         offers.sort(key=lambda o: (
             # Приоритет 1: AutoKontinent товары в наличии
             0 if (o.get('source') == 'autokontinent_db' and o.get('availability', 0) > 0) else
-            # Приоритет 2: AutoKontinent товары (не в наличии)
-            1 if o.get('source') == 'autokontinent_db' else
-            # Приоритет 3: AutoSputnik товары
-            2 if o.get('source') == 'autosputnik' else
-            # Приоритет 4: остальные
-            3,
+            # Приоритет 2: AutoKontinent аналоги в наличии
+            1 if (o.get('source') == 'autokontinent_analog' and o.get('availability', 0) > 0) else
+            # Приоритет 3: AutoKontinent товары (не в наличии)
+            2 if o.get('source') == 'autokontinent_db' else
+            # Приоритет 4: AutoKontinent аналоги (не в наличии)
+            3 if o.get('source') == 'autokontinent_analog' else
+            # Приоритет 5: AutoSputnik товары
+            4 if o.get('source') == 'autosputnik' else
+            # Приоритет 6: остальные
+            5,
             # Внутри каждого приоритета сортируем по цене
             o.get('price') or 0
         ))
-        visible = offers[:VISIBLE_LIMIT]  # показываем первые 3 предложения
-        rest    = offers[VISIBLE_LIMIT:]
+        
+        # Определяем, является ли это главным артикулом (искомым)
+        is_main_article = search_brand and brand.lower() == search_brand.lower()
+        
+        # Выбираем лимит в зависимости от того, главный это артикул или аналог
+        visible_limit = MAIN_VISIBLE_LIMIT if is_main_article else VISIBLE_LIMIT
+        
+        visible = offers[:visible_limit]  # показываем 5 для главного, 3 для аналогов
+        rest    = offers[visible_limit:]
         hidden  = rest[:HIDDEN_LIMIT]  # показываем до 10 остальных по кнопке
         hidden_total = len(rest)
         hidden_shown = len(hidden)  # количество товаров в hidden

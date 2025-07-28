@@ -9,6 +9,13 @@ class CatalogConfig(AppConfig):
         from django.db.models.signals import post_migrate
         from django.conf import settings
         from .supplier_models import Supplier
+        
+        # Импортируем задачи для автоматического обнаружения Celery
+        try:
+            from . import tasks
+        except ImportError:
+            pass
+            
         def ensure_autokontinent_supplier(sender, **kwargs):
             Supplier.objects.get_or_create(
                 name='Автоконтинент',

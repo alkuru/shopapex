@@ -60,8 +60,8 @@
   .table th:nth-child(2), .table td:nth-child(2) { width: 180px; }
   .table th:nth-child(3), .table td:nth-child(3) { width: 220px; }
   .table th:nth-child(4), .table td:nth-child(4) { width: 50px; }
-  .table th:nth-child(5), .table td:nth-child(5) { width: 40px; }
-  .table th:nth-child(6), .table td:nth-child(6) { width: 160px; }
+  .table th:nth-child(5), .table td:nth-child(5) { width: 100px; }
+  .table th:nth-child(6), .table td:nth-child(6) { width: 60px; }
   .table th:nth-child(7), .table td:nth-child(7) { width: 90px; }
   .table th:nth-child(8), .table td:nth-child(8) { width: 90px; }
   .table thead th a,
@@ -98,6 +98,15 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+  .brand-mann {
+    color: #28a745 !important;
+    font-weight: bold !important;
+    background: #d4edda !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    border: 1px solid #c3e6cb !important;
+  }
   }
   .cart-btn-custom:hover, .cart-btn-custom:focus {
     background: #f8f9fa !important;
@@ -522,7 +531,7 @@
                     <tbody>
                     {% for b in brands_list %}
                       <tr>
-                        <td>{{ b.brand }}</td>
+                        <td><span class="{{ b.brand|brand_highlight:selected_brand|default_if_none:'' }}">{{ b.brand }}</span></td>
                         <td>{{ b.articul }}</td>
                         <td>{{ b.name }}</td>
                         <td>
@@ -560,12 +569,12 @@
                           <tr>
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
-                              {% with flag=p.brand|brand_flag %}
+                              {% with flag=p.brand|brand_display|brand_flag %}
                                 {% if flag %}
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              <strong>{{ p.brand|default:"-" }}</strong>
+                              <strong>{{ p.brand|brand_display|default:"-" }}</strong>
                               {% with rating=brand_ratings|get_item:p.brand %}
                                 {% if rating %}
                                   <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
@@ -608,12 +617,12 @@
                           <tr class="hidden group-{{ key }}">
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
-                              {% with flag=p.brand|brand_flag %}
+                              {% with flag=p.brand|brand_display|brand_flag %}
                                 {% if flag %}
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              <strong>{{ p.brand|default:"-" }}</strong>
+                              <strong>{{ p.brand|brand_display|default:"-" }}</strong>
                               {% with rating=brand_ratings|get_item:p.brand %}
                                 {% if rating %}
                                   <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
@@ -665,12 +674,12 @@
                           <tr>
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
-                              {% with flag=p.brand|brand_flag %}
+                              {% with flag=p.brand|brand_display|brand_flag %}
                                 {% if flag %}
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              <strong>{{ p.brand|default:"-" }}</strong>
+                              <strong>{{ p.brand|brand_display|default:"-" }}</strong>
                               {% with rating=brand_ratings|get_item:p.brand %}
                                 {% if rating %}
                                   <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>
@@ -713,12 +722,12 @@
                           <tr class="hidden group-{{ key }}">
                             <td>{{ p.article|default:"-" }}</td>
                             <td>
-                              {% with flag=p.brand|brand_flag %}
+                              {% with flag=p.brand|brand_display|brand_flag %}
                                 {% if flag %}
                                   <img src="{% static 'flags/' %}{{ flag }}.svg" alt="{{ flag }}" title="{{ flag|upper }}" style="height:14px;vertical-align:middle;margin-right:4px;">
                                 {% endif %}
                               {% endwith %}
-                              <strong>{{ p.brand|default:"-" }}</strong>
+                              <strong>{{ p.brand|brand_display|default:"-" }}</strong>
                               {% with rating=brand_ratings|get_item:p.brand %}
                                 {% if rating %}
                                   <span style="margin-left:4px;vertical-align:middle;">{{ rating|brand_rating_stars|safe }}</span>

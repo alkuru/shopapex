@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 from . import web_views
+from . import api_views
 
 app_name = 'catalog'
 
@@ -38,4 +39,12 @@ urlpatterns = [
 
     # API умного поиска автозапчастей
     path('smart-search/', views.SmartSearchView.as_view(), name='smart_search'),
+    
+    # API endpoints для загрузки прайса
+    path('upload-price/', api_views.upload_price_api, name='upload_price_api'),
+    path('upload-progress/', api_views.upload_progress_api, name='upload_progress_api'),
+    
+    # API endpoints для обновления брендов
+    path('update-brands/', api_views.update_brands_api, name='update_brands_api'),
+    path('update-brands-progress/', api_views.update_brands_progress_api, name='update_brands_progress_api'),
 ]

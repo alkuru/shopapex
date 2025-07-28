@@ -89,7 +89,7 @@
             </ul>
         </div>
         
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="upload-price-form">
             {% csrf_token %}
             
             <div class="form-row">
@@ -124,9 +124,103 @@
             </div>
             
             <div class="submit-row">
-                <input type="submit" value="Загрузить прайс" />
+                <input type="submit" value="Загрузить прайс" id="submit-btn" />
             </div>
         </form>
+        <div id="progress-container" style="display:none; margin-top:20px;">
+            <div style="font-weight:bold; margin-bottom:5px;">Прогресс загрузки прайса:</div>
+            <div style="background:#eee; border-radius:4px; height:24px; width:100%;">
+                <div id="progress-bar" style="background:#79aec8; height:24px; width:0%; border-radius:4px; transition:width 0.3s;"></div>
+            </div>
+            <div id="progress-text" style="margin-top:5px; font-size:14px;">0%</div>
+        </div>
+        <script>
+        // Проверяем, есть ли активная загрузка при загрузке страницы
+        window.addEventListener('load', function() {
+            setTimeout(checkActiveUpload, 1000);
+        });
+        
+        function checkActiveUpload() {
+            const progressUrl = window.location.pathname.replace('upload-price/', 'upload-price-progress/');
+            fetch(progressUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                credentials: 'same-origin'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.progress > 0 && data.progress < 100) {
+                    console.log('Active upload detected, progress:', data.progress);
+                    document.getElementById('progress-container').style.display = 'block';
+                    document.getElementById('submit-btn').disabled = true;
+                    pollProgress();
+                }
+            })
+            .catch(error => {
+                console.log('No active upload detected');
+            });
+        }
+        
+        document.getElementById('upload-price-form').addEventListener('submit', function(e) {
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').innerText = '0%';
+            setTimeout(pollProgress, 700);
+        });
+        function pollProgress() {
+            const progressUrl = window.location.pathname.replace('upload-price/', 'upload-price-progress/');
+            console.log('Polling progress from:', progressUrl);
+            
+            fetch(progressUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                credentials: 'same-origin'
+            })
+                .then(r => {
+                    console.log('Response status:', r.status);
+                    console.log('Response headers:', r.headers);
+                    if (!r.ok) {
+                        throw new Error('HTTP ' + r.status);
+                    }
+                    return r.text().then(text => {
+                        console.log('Response text:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error('JSON parse error:', e);
+                            throw new Error('Invalid JSON: ' + text);
+                        }
+                    });
+                })
+                .then(data => {
+                    console.log('Progress data:', data);
+                    let p = data.progress || 0;
+                    document.getElementById('progress-bar').style.width = p + '%';
+                    document.getElementById('progress-text').innerText = p + '%';
+                    if (p < 100) {
+                        setTimeout(pollProgress, 1000);
+                    } else {
+                        document.getElementById('progress-text').innerText = 'Готово!';
+                        setTimeout(() => { window.location.reload(); }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Progress poll error:', error);
+                    document.getElementById('progress-text').innerText = 'Ошибка получения прогресса: ' + error.message;
+                    // Продолжаем опрос даже при ошибке
+                    setTimeout(pollProgress, 2000);
+                });
+        }
+        </script>
     </div>
 </div>
 {% endblock %} 

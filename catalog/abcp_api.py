@@ -16,11 +16,15 @@ def normalize_brand(brand):
     if not brand:
         return None
     # Нормализуем бренд для поиска
-    normalized = brand.strip().lower().replace(' ', '').replace('-', '')
+    normalized = brand.strip().lower().replace(' ', '').replace('-', '').replace('/', '')
     
     # Особые случаи для бренда Mann
     if normalized in ['mann', 'mannfilter']:
         return 'MANN-FILTER'
+    
+    # Особые случаи для бренда Mahle
+    if normalized in ['mahle', 'knechtmahle']:
+        return 'Knecht/Mahle'
     
     return brand
 

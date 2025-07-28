@@ -236,6 +236,7 @@ class AutoKontinentProduct(models.Model):
     brand = models.CharField(max_length=100, verbose_name='Бренд')
     article = models.CharField(max_length=100, verbose_name='Код товара')
     name = models.CharField(max_length=300, verbose_name='Наименование товара')
+    stock_spb_north = models.PositiveIntegerField(default=0, verbose_name='Кол-во СЕВ_СПб')
     stock_spb = models.PositiveIntegerField(default=0, verbose_name='Кол-во СПб')
     stock_msk = models.PositiveIntegerField(default=0, verbose_name='Кол-во МСК')
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена')
@@ -249,6 +250,11 @@ class AutoKontinentProduct(models.Model):
         indexes = [
             models.Index(fields=['article']),
             models.Index(fields=['brand']),
+            models.Index(fields=['article', 'brand']),  # Составной индекс для поиска
+            models.Index(fields=['updated_at']),  # Для сортировки
+            models.Index(fields=['stock_spb_north']),  # Для фильтрации по наличию
+            models.Index(fields=['stock_spb']),
+            models.Index(fields=['stock_msk']),
         ]
         unique_together = ['brand', 'article']
 

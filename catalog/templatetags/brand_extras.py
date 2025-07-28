@@ -71,3 +71,35 @@ def brand_rating_stars(rating):
         title = '1★ Плохой'
     
     return f'<span style="color: {color}; font-size: 14px;" title="{title}">{stars}</span>'
+
+
+@register.filter
+def brand_highlight(brand_name, selected_brand=None):
+    """
+    Возвращает CSS класс для подсветки бренда, если он совпадает с выбранным брендом (без учёта регистра и пробелов),
+    либо если selected_brand пустой и бренд — MANN-FILTER
+    """
+    if not brand_name:
+        return ''
+    brand_norm = str(brand_name).lower().replace('-', '').replace(' ', '').strip()
+    if selected_brand:
+        selected_norm = str(selected_brand).lower().replace('-', '').replace(' ', '').strip()
+        if brand_norm == selected_norm:
+            return 'brand-mann'
+    else:
+        if brand_norm in ['mannfilter', 'knechtmahle']:
+            return 'brand-mann'
+    return ''
+
+
+@register.filter
+def brand_display(brand_name):
+    """
+    Приводит бренд к отображаемому виду: все варианты Mann/MANN/MANN FILTER/mann-filter -> MANN-FILTER
+    """
+    if not brand_name:
+        return ''
+    name = str(brand_name).strip().lower().replace(' ', '').replace('-', '')
+    if name in ['mann', 'mannfilter']:
+        return 'MANN-FILTER'
+    return brand_name

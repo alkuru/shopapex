@@ -17,6 +17,8 @@ from .supplier_models import (
     SupplierStaff, SupplierDeliveryMethod, SupplierOrderStatus, SupplierClientGroup,
     SupplierClient, SupplierOrder, SupplierOrderItem, SupplierOrderHistory, SupplierBalanceTransaction
 )
+from django.template.response import TemplateResponse
+from django.core.cache import cache
 
 # Форма для загрузки прайса
 class PriceUploadForm(forms.Form):
@@ -502,7 +504,7 @@ class SupplierBalanceTransactionAdmin(admin.ModelAdmin):
 
 @admin.register(AutoKontinentProduct)
 class AutoKontinentProductAdmin(admin.ModelAdmin):
-    list_display = ['article', 'brand', 'name', 'stock_spb', 'stock_msk', 'price', 'updated_at']
+    list_display = ['article', 'brand', 'name', 'stock_spb_north', 'stock_spb', 'stock_msk', 'price', 'updated_at']
     list_filter = ['brand', 'updated_at']
     search_fields = ['article', 'brand', 'name']
     readonly_fields = ['updated_at']
@@ -511,10 +513,26 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('upload-price/', self.admin_site.admin_view(self.upload_price_view), name='catalog_autokontinentproduct_upload_price'),
+            path('upload-price-progress/', self.admin_site.admin_view(self.upload_price_progress_view), name='catalog_autokontinentproduct_upload_price_progress'),
             path('update-brands/', self.admin_site.admin_view(self.update_brands_view), name='catalog_autokontinentproduct_update_brands'),
+            path('update-brands-progress/', self.admin_site.admin_view(self.update_brands_progress_view), name='catalog_autokontinentproduct_update_brands_progress'),
         ]
         return custom_urls + urls
     
+    def update_brands_progress_view(self, request):
+        """Возвращает текущий прогресс обновления брендов (0-100)"""
+        progress = cache.get('update_brands_progress', 0)
+        return JsonResponse({'progress': progress})
+
+    def upload_price_progress_view(self, request):
+        """Возвращает текущий прогресс загрузки прайса (0-100)"""
+        # Проверяем, что пользователь аутентифицирован
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        progress = cache.get('upload_price_progress', 0)
+        return JsonResponse({'progress': progress})
+
     def upload_price_view(self, request):
         """Представление для загрузки прайса"""
         if request.method == 'POST':
@@ -522,41 +540,41 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
             if form.is_valid():
                 try:
                     excel_file = form.cleaned_data['excel_file']
-                    update_existing = form.cleaned_data['update_existing']
                     clear_existing = form.cleaned_data['clear_existing']
                     
-                    # Очищаем существующие товары если нужно
                     if clear_existing:
                         deleted_count = AutoKontinentProduct.objects.count()
                         AutoKontinentProduct.objects.all().delete()
                         messages.success(request, f'Удалено {deleted_count} существующих товаров')
                     
-                    # Загружаем Excel файл
+                    # Читаем Excel файл
                     df = pd.read_excel(excel_file)
-                    
-                    # Обрабатываем данные
+                    total_rows = len(df)
                     created_count = 0
                     updated_count = 0
                     
+                    cache.set('upload_price_progress', 0)
+                    
+                    # Обрабатываем файл по строкам с оптимизацией
                     for index, row in df.iterrows():
                         try:
-                            # Извлекаем данные из строки (адаптируйте под структуру вашего файла)
                             brand = str(row.get('Бренд', '')).strip()
-                            article = str(row.get('Артикул', '')).strip()
-                            name = str(row.get('Наименование', '')).strip()
-                            stock_spb = int(row.get('СПб', 0)) if pd.notna(row.get('СПб')) else 0
-                            stock_msk = int(row.get('МСК', 0)) if pd.notna(row.get('МСК')) else 0
+                            article = str(row.get('Код товара', '')).strip()
+                            name = str(row.get('Наименование товара', '')).strip()
+                            stock_spb_north = int(row.get('Кол-во СЕВ_СПб', 0)) if pd.notna(row.get('Кол-во СЕВ_СПб')) else 0
+                            stock_spb = int(row.get('Кол-во СПб', 0)) if pd.notna(row.get('Кол-во СПб')) else 0
+                            stock_msk = int(row.get('Кол-во МСК', 0)) if pd.notna(row.get('Кол-во МСК')) else 0
                             price = float(row.get('Цена', 0)) if pd.notna(row.get('Цена')) else 0
                             multiplicity = int(row.get('Кратность', 1)) if pd.notna(row.get('Кратность')) else 1
-                            unit = str(row.get('Ед.изм.', 'шт')).strip()
+                            unit = str(row.get('Ед. изм.', 'шт')).strip()
                             
                             if brand and article and name:
-                                # Создаем или обновляем товар
                                 product, created = AutoKontinentProduct.objects.update_or_create(
                                     brand=brand,
                                     article=article,
                                     defaults={
                                         'name': name,
+                                        'stock_spb_north': stock_spb_north,
                                         'stock_spb': stock_spb,
                                         'stock_msk': stock_msk,
                                         'price': price,
@@ -564,7 +582,6 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
                                         'unit': unit,
                                     }
                                 )
-                                
                                 if created:
                                     created_count += 1
                                 else:
@@ -573,24 +590,35 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
                         except Exception as e:
                             messages.warning(request, f'Ошибка в строке {index + 2}: {str(e)}')
                             continue
+                        
+                        # Обновляем прогресс каждые 100 строк
+                        if index % 100 == 0:
+                            progress = int((index + 1) / total_rows * 100)
+                            cache.set('upload_price_progress', progress)
                     
+                    cache.set('upload_price_progress', 100)
                     messages.success(request, f'Импорт завершен! Создано: {created_count}, Обновлено: {updated_count}')
                     return redirect('admin:catalog_autokontinentproduct_changelist')
                     
                 except Exception as e:
+                    cache.set('upload_price_progress', 0)
                     messages.error(request, f'Ошибка при загрузке файла: {str(e)}')
         else:
             form = PriceUploadForm()
-        
-        # Отображаем форму
         context = {
             'title': 'Загрузка прайса АвтоКонтинента',
             'form': form,
             'opts': self.model._meta,
+            'subtitle': '',
+            'is_nav_sidebar_enabled': False,
+            'is_popup': False,
+            'has_permission': True,
+            'site_url': '/admin/',
+            'site_title': 'Администрирование Django',
+            'site_header': 'Администрирование Django',
         }
-        return admin.views.decorators.staff_member_required(
-            lambda request: self.admin_site.admin_view(self.admin_site.template_response(request, 'admin/catalog/autokontinentproduct/upload_price.html', context))
-        )(request)
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'admin/catalog/autokontinentproduct/upload_price.html', context)
     
     def update_brands_view(self, request):
         """Представление для обновления брендов"""
@@ -600,59 +628,64 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
                 try:
                     update_brands = form.cleaned_data['update_brands']
                     manual_mappings = form.cleaned_data['manual_mappings']
-                    
                     updated_count = 0
-                    
+                    cache.set('update_brands_progress', 0)
                     if update_brands:
-                        # Загружаем маппинг из файла
                         import json
                         import os
-                        
+                        from django.db.models import F
                         mapping_file = os.path.join(os.path.dirname(__file__), '..', 'brands_data', 'brand_analysis_results.json')
-                        
                         if os.path.exists(mapping_file):
                             with open(mapping_file, 'r', encoding='utf-8') as f:
                                 brand_data = json.load(f)
-                            
-                            # Применяем маппинги
-                            for mapping in brand_data.get('exact_matches', []):
-                                old_brand = mapping.get('autokontinent_brand')
-                                new_brand = mapping.get('autosputnik_brand')
-                                
-                                if old_brand and new_brand:
-                                    count = AutoKontinentProduct.objects.filter(brand=old_brand).update(brand=new_brand)
+                            def norm(s):
+                                return str(s).strip().lower().replace(' ', '').replace('-', '').replace('/', '')
+                            mapping = {norm(m['autokontinent']): m['autosputnik'] for m in brand_data.get('exact_matches', []) if m.get('autokontinent') and m.get('autosputnik')}
+                            all_brands = list(AutoKontinentProduct.objects.values_list('brand', flat=True).distinct())
+                            total = len(all_brands)
+                            for idx, old_brand in enumerate(all_brands):
+                                old_norm = norm(old_brand)
+                                if old_norm in mapping:
+                                    new_brand = mapping[old_norm]
+                                    count = AutoKontinentProduct.objects.filter(brand__iexact=old_brand).update(brand=new_brand)
                                     updated_count += count
-                    
+                                # Обновляем прогресс
+                                cache.set('update_brands_progress', int((idx+1)/total*80))
                     if manual_mappings:
-                        # Ручные маппинги
                         manual_mappings_dict = {
                             'Victor Reinz': 'REINZ',
                             'MANN-FILTER': 'Mann',
                             'Behr-Hella': 'BEHR',
                             'Autopartner': 'Autopa',
                         }
-                        
-                        for old_brand, new_brand in manual_mappings_dict.items():
-                            count = AutoKontinentProduct.objects.filter(brand=old_brand).update(brand=new_brand)
+                        all_manual = list(manual_mappings_dict.items())
+                        total_manual = len(all_manual)
+                        for idx, (old_brand, new_brand) in enumerate(all_manual):
+                            count = AutoKontinentProduct.objects.filter(brand__iexact=old_brand).update(brand=new_brand)
                             updated_count += count
-                    
+                            cache.set('update_brands_progress', 80 + int((idx+1)/total_manual*20))
+                    cache.set('update_brands_progress', 100)
                     messages.success(request, f'Обновлено {updated_count} записей брендов')
                     return redirect('admin:catalog_autokontinentproduct_changelist')
-                    
                 except Exception as e:
+                    cache.set('update_brands_progress', 0)
                     messages.error(request, f'Ошибка при обновлении брендов: {str(e)}')
         else:
             form = BrandUpdateForm()
-        
-        # Отображаем форму
         context = {
             'title': 'Обновление брендов',
             'form': form,
             'opts': self.model._meta,
+            'subtitle': '',
+            'is_nav_sidebar_enabled': False,
+            'is_popup': False,
+            'has_permission': True,
+            'site_url': '/admin/',
+            'site_title': 'Администрирование Django',
+            'site_header': 'Администрирование Django',
         }
-        return admin.views.decorators.staff_member_required(
-            lambda request: self.admin_site.admin_view(self.admin_site.template_response(request, 'admin/catalog/autokontinentproduct/update_brands.html', context))
-        )(request)
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, 'admin/catalog/autokontinentproduct/update_brands.html', context)
     
     def changelist_view(self, request, extra_context=None):
         """Добавляем кнопку загрузки прайса"""
@@ -662,7 +695,7 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('brand', 'article', 'name', 'stock_spb', 'stock_msk', 'price', 'multiplicity', 'unit')
+            'fields': ('brand', 'article', 'name', 'stock_spb_north', 'stock_spb', 'stock_msk', 'price', 'multiplicity', 'unit')
         }),
     )
     

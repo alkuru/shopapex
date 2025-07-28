@@ -31,4 +31,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Команда по умолчанию
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "120", "shopapex_project.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "1800", "--workers", "1", "--max-requests", "1000", "--max-requests-jitter", "100", "shopapex_project.wsgi:application"]

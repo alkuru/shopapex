@@ -7,6 +7,12 @@ app = Celery('shopapex_project')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
+# Импортируем задачи вручную
+try:
+    from catalog import tasks
+except ImportError:
+    pass
+
 # Для теста запуска задачи
 @app.task(bind=True)
 def debug_task(self):

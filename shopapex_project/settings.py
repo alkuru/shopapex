@@ -96,7 +96,7 @@ WSGI_APPLICATION = 'shopapex_project.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 import dj_database_url
 
-db_url = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+db_url = config('DATABASE_URL', default='postgresql://postgres:postgres@localhost:5432/shopapex')
 if not isinstance(db_url, str):
     db_url = str(db_url)
 DATABASES = {
@@ -178,8 +178,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Celery settings
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://redis:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://redis:6379/0')
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
@@ -196,7 +196,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'LOCATION': config('REDIS_URL', default='redis://redis:6379/1'),
     }
 }
 

@@ -8,6 +8,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.core.cache import cache
 from .models import (
     ProductCategory, Product, Brand, Cart, Supplier, SupplierProduct, SupplierSyncLog,
     SupplierStaff, SupplierDeliveryMethod, SupplierOrderStatus,
@@ -112,10 +113,12 @@ def product_search(request):
     def price_label(pn: str) -> str:
         pn = (pn or '').lower()
         # Для АвтоКонтинента: новые названия складов
-        if 'цс ак' in pn:
-            return 'ЦС АК'
+        if 'цс ак сев' in pn:
+            return 'ЦС АК СЕВ'
         if 'цс акмск' in pn:
             return 'ЦС АКМСК'
+        if 'цс ак' in pn:
+            return 'ЦС АК'
         # Для автоспутник: оставить только 'цс воронеж', 'цс краснодар', 'цс ростов'
         if 'цс воронеж' in pn:
             return 'ЦС-ВР'
@@ -150,54 +153,64 @@ def product_search(request):
         else:
             # Используем новый объединённый поиск
             try:
-                # Запрос к нашему объединённому API
-                api_url = "http://fastapi:8001/unified_search"
-                params = {'article': query, 'brand': brand}
+                # Проверяем кэш
+                cache_key = f"search_{query}_{brand}"
+                cached_result = cache.get(cache_key)
                 
-                response = requests.get(api_url, params=params, timeout=30)
-                if response.status_code == 200:
-                    data = response.json()
-                    items = data.get('data', [])
-                    print('DEBUG: Unified API result:', items)
-                    
-                    if items:
-                        for item in items:
-                            # Определяем источник товара
-                            source = item.get('source', 'unknown')
-                            if source == 'autokontinent_db':
-                                supplier = 'АвтоКонтинент'
-                                price_label_val = price_label(item.get('warehouse', ''))
-                                is_analog = False  # АвтоКонтинент не имеет аналогов в базе
-                            else:
-                                supplier = 'Авто-Спутник'
-                                price_label_val = price_label(item.get('warehouse', ''))
-                                is_analog = bool(item.get('analog', False))
-                            
-                            products.append({
-                                'name': item.get('description', ''),
-                                'article': item.get('article', ''),
-                                'brand': item.get('brand', ''),
-                                'brand_obj': {'name': item.get('brand', '')},
-                                'description': item.get('description', ''),
-                                'stock_quantity': item.get('availability', 0),
-                                'delivery_time': item.get('delivery_time', ''),
-                                'warehouse': item.get('warehouse', ''),
-                                'price': item.get('price', 0),
-                                'supplier': supplier,
-                                'is_analog': is_analog,
-                                'price_label': price_label_val,
-                                'delivery_date': item.get('delivery_date', ''),
-                                'unit': item.get('unit', ''),
-                                'min': item.get('min', 1),
-                                'cratnost': item.get('cratnost', 1),
-                                'vozvrat': item.get('vozvrat', False),
-                                'official_diler': item.get('official_diler', False),
-                                'source': source,  # Добавляем источник для отладки
-                            })
-                    else:
-                        error = "Товары не найдены."
+                if cached_result:
+                    items = cached_result
                 else:
-                    error = f"Ошибка API: {response.status_code}"
+                    # Запрос к нашему объединённому API
+                    api_url = "http://fastapi:8001/unified_search"
+                    params = {'article': query, 'brand': brand}
+                    
+                    response = requests.get(api_url, params=params, timeout=30)
+                    if response.status_code == 200:
+                        data = response.json()
+                        items = data.get('data', [])
+                        
+                        # Кэшируем результат на 5 минут
+                        cache.set(cache_key, items, 300)
+                    else:
+                        error = f"Ошибка API: {response.status_code}"
+                        items = []
+                
+                if items:
+                    for item in items:
+                        # Определяем источник товара
+                        source = item.get('source', 'unknown')
+                        if source == 'autokontinent_db':
+                            supplier = 'АвтоКонтинент'
+                            price_label_val = price_label(item.get('warehouse', ''))
+                            is_analog = False  # АвтоКонтинент не имеет аналогов в базе
+                        else:
+                            supplier = 'Авто-Спутник'
+                            price_label_val = price_label(item.get('warehouse', ''))
+                            is_analog = bool(item.get('analog', False))
+                        
+                        products.append({
+                            'name': item.get('description', ''),
+                            'article': item.get('article', ''),
+                            'brand': item.get('brand', ''),
+                            'brand_obj': {'name': item.get('brand', '')},
+                            'description': item.get('description', ''),
+                            'stock_quantity': item.get('availability', 0),
+                            'delivery_time': item.get('delivery_time', ''),
+                            'warehouse': item.get('warehouse', ''),
+                            'price': item.get('price', 0),
+                            'supplier': supplier,
+                            'is_analog': is_analog,
+                            'price_label': price_label_val,
+                            'delivery_date': item.get('delivery_date', ''),
+                            'unit': item.get('unit', ''),
+                            'min': item.get('min', 1),
+                            'cratnost': item.get('cratnost', 1),
+                            'vozvrat': item.get('vozvrat', False),
+                            'official_diler': item.get('official_diler', False),
+                            'source': source,  # Добавляем источник для отладки
+                        })
+                else:
+                    error = "Товары не найдены."
                     
             except Exception as e:
                 print(f"DEBUG: Error calling unified API: {e}")
@@ -375,6 +388,7 @@ def product_search(request):
         'unique_brands': unique_brands,  # Уникальный список брендов для фильтра
         'unique_delivery_times': unique_delivery_times,  # Уникальный список сроков поставки для фильтра
         'unique_prices': unique_prices,  # Уникальный список цен для фильтра
+
     }
     return render(request, 'catalog/search.html', context)
 
@@ -1045,7 +1059,7 @@ def autokont_basket_add(request):
         'quantity': quantity
     }
     try:
-        resp = requests.get(url, params=params, auth=auth, timeout=10)
+        resp = requests.get(url, params=params, auth=auth, timeout=7)
         data = resp.json()
         return JsonResponse(data)
     except Exception as e:
@@ -1057,7 +1071,7 @@ def autokont_basket_get(request):
     url = 'http://api.autokontinent.ru/v1/basket/get.json'
     auth = (settings.AUTOKONT_LOGIN, settings.AUTOKONT_PASSWORD)
     try:
-        resp = requests.get(url, auth=auth, timeout=10)
+        resp = requests.get(url, auth=auth, timeout=7)
         data = resp.json()
         return render(request, 'catalog/basket.html', {'basket': data})
     except Exception as e:
@@ -1075,7 +1089,7 @@ def autokont_basket_del(request):
     auth = (settings.AUTOKONT_LOGIN, settings.AUTOKONT_PASSWORD)
     params = {'basket_id': basket_id, 'version': version}
     try:
-        resp = requests.get(url, params=params, auth=auth, timeout=10)
+        resp = requests.get(url, params=params, auth=auth, timeout=7)
         data = resp.json()
         return JsonResponse(data)
     except Exception as e:
@@ -1088,7 +1102,7 @@ def autokont_basket_clear(request):
     from django.conf import settings
     auth = (settings.AUTOKONT_LOGIN, settings.AUTOKONT_PASSWORD)
     try:
-        resp = requests.get(url, auth=auth, timeout=10)
+        resp = requests.get(url, auth=auth, timeout=7)
         data = resp.json()
         return JsonResponse(data)
     except Exception as e:
@@ -1103,7 +1117,7 @@ def autokont_basket_order(request):
     auth = (settings.AUTOKONT_LOGIN, settings.AUTOKONT_PASSWORD)
     params = {'delivery_mode_id': delivery_mode_id}
     try:
-        resp = requests.get(url, params=params, auth=auth, timeout=10)
+        resp = requests.get(url, params=params, auth=auth, timeout=7)
         data = resp.json()
         return JsonResponse(data)
     except Exception as e:
@@ -1125,7 +1139,7 @@ def autokont_order_history(request):
         date_to = datetime.date.today().strftime('%Y-%m-%d')
     params = {'date_from': date_from, 'date_to': date_to}
     try:
-        resp = requests.get(url, params=params, auth=auth, timeout=10)
+        resp = requests.get(url, params=params, auth=auth, timeout=7)
         data = resp.json()
         return render(request, 'catalog/order_history.html', {'orders': data, 'date_from': date_from, 'date_to': date_to})
     except Exception as e:
