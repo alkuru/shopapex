@@ -54,7 +54,7 @@ class MikadoPriceUploadForm(forms.Form):
     max_products = forms.IntegerField(
         label='Максимальное количество товаров',
         min_value=1,
-        max_value=10000,
+        max_value=1000000,
         initial=1000,
         help_text='Максимальное количество товаров для загрузки'
     )
@@ -733,8 +733,36 @@ class MikadosProductAdmin(admin.ModelAdmin):
         custom_urls = [
             path('upload-price/', self.admin_site.admin_view(self.upload_price_view), name='catalog_mikadosproduct_upload_price'),
             path('upload-price-progress/', self.admin_site.admin_view(self.upload_price_progress_view), name='catalog_mikadosproduct_upload_price_progress'),
+            path('clear-all/', self.admin_site.admin_view(self.clear_all_view), name='catalog_mikadosproduct_clear_all'),
         ]
         return custom_urls + urls
+
+    def clear_all_view(self, request):
+        """Представление для очистки всей базы товаров Микадо"""
+        if request.method == 'POST':
+            try:
+                deleted_count = MikadosProduct.objects.count()
+                MikadosProduct.objects.all().delete()
+                messages.success(request, f'Удалено {deleted_count} товаров Микадо из базы данных')
+                return redirect('admin:catalog_mikadosproduct_changelist')
+            except Exception as e:
+                messages.error(request, f'Ошибка при очистке базы: {str(e)}')
+                return redirect('admin:catalog_mikadosproduct_changelist')
+        else:
+            # Показываем страницу подтверждения
+            context = {
+                'title': 'Очистка базы товаров Микадо',
+                'opts': self.model._meta,
+                'subtitle': '',
+                'is_nav_sidebar_enabled': False,
+                'is_popup': False,
+                'has_permission': True,
+                'site_url': '/admin/',
+                'site_title': 'Администрирование Django',
+                'site_header': 'Администрирование Django',
+                'total_products': MikadosProduct.objects.count(),
+            }
+            return TemplateResponse(request, 'admin/catalog/mikadosproduct/clear_all.html', context)
 
     def upload_price_progress_view(self, request):
         """Возвращает текущий прогресс загрузки прайса (0-100)"""
@@ -829,8 +857,8 @@ class MikadosProductAdmin(admin.ModelAdmin):
                             messages.warning(request, f'Ошибка в строке {index + 2}: {str(e)}')
                             continue
                         
-                        # Обновляем прогресс каждые 50 строк
-                        if index % 50 == 0:
+                        # Обновляем прогресс каждые 10 строк
+                        if index % 10 == 0:
                             progress = int((index + 1) / total_rows * 100)
                             cache.set('mikado_upload_price_progress', progress)
                     

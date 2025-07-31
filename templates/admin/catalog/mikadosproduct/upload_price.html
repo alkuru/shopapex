@@ -1,1 +1,203 @@
- 
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ form.media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">
+<style>
+    .upload-form {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-row {
+        margin-bottom: 20px;
+    }
+    .form-row label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+    .form-row input[type="file"],
+    .form-row input[type="text"],
+    .form-row input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    .form-row input[type="checkbox"] {
+        margin-right: 10px;
+    }
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+    .submit-row {
+        text-align: center;
+        margin-top: 30px;
+    }
+    .submit-row input[type="submit"] {
+        background: #79aec8;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .submit-row input[type="submit"]:hover {
+        background: #417690;
+    }
+    .progress-container {
+        display: none;
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        background-color: #007bff;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    .progress-text {
+        text-align: center;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:catalog_mikadosproduct_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; {% trans 'Upload Price' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="upload-form">
+        <h1>{{ title }}</h1>
+        
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+            
+            <div class="form-row">
+                {{ form.excel_file.label_tag }}
+                {{ form.excel_file }}
+                {% if form.excel_file.help_text %}
+                    <div class="help-text">{{ form.excel_file.help_text }}</div>
+                {% endif %}
+                {% if form.excel_file.errors %}
+                    <div class="errors">{{ form.excel_file.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                {{ form.brand_filter.label_tag }}
+                {{ form.brand_filter }}
+                {% if form.brand_filter.help_text %}
+                    <div class="help-text">{{ form.brand_filter.help_text }}</div>
+                {% endif %}
+                {% if form.brand_filter.errors %}
+                    <div class="errors">{{ form.brand_filter.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                {{ form.max_products.label_tag }}
+                {{ form.max_products }}
+                {% if form.max_products.help_text %}
+                    <div class="help-text">{{ form.max_products.help_text }}</div>
+                {% endif %}
+                {% if form.max_products.errors %}
+                    <div class="errors">{{ form.max_products.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                <label>
+                    {{ form.clear_existing }}
+                    {{ form.clear_existing.label }}
+                </label>
+                {% if form.clear_existing.help_text %}
+                    <div class="help-text">{{ form.clear_existing.help_text }}</div>
+                {% endif %}
+                {% if form.clear_existing.errors %}
+                    <div class="errors">{{ form.clear_existing.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Upload Price' %}" id="submit-btn">
+            </div>
+        </form>
+        
+        <div class="progress-container" id="progress-container">
+            <h3>Загрузка прайса...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+    var submitBtn = document.getElementById('submit-btn');
+    var progressContainer = document.getElementById('progress-container');
+    var progressFill = document.getElementById('progress-fill');
+    var progressText = document.getElementById('progress-text');
+    
+    // Показываем прогресс
+    progressContainer.style.display = 'block';
+    submitBtn.disabled = true;
+    submitBtn.value = 'Загрузка...';
+    
+    // Запускаем отслеживание прогресса
+    var progressInterval = setInterval(function() {
+        fetch('{% url "admin:catalog_mikadosproduct_upload_price_progress" %}')
+            .then(response => response.json())
+            .then(data => {
+                var progress = data.progress || 0;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching progress:', error);
+            });
+    }, 1000);
+});
+</script>
+{% endblock %} 
