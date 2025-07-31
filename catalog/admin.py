@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import UploadedFile
 import pandas as pd
 from .models import (
     Brand, WarehouseSettings, ProductCategory, Product, ProductImage, 
-    ProductAnalog, Cart, CartItem, AutoKontinentProduct, MikadoProduct
+    ProductAnalog, Cart, CartItem, AutoKontinentProduct, MikadoProduct, MikadosProduct
 )
 from .supplier_models import (
     Supplier, SupplierProduct, SupplierSyncLog, APIMonitorLog, APIHealthCheck,
@@ -19,6 +19,7 @@ from .supplier_models import (
 )
 from django.template.response import TemplateResponse
 from django.core.cache import cache
+from .brand_mapping import BRAND_MAPPING
 
 # Форма для загрузки прайса
 class PriceUploadForm(forms.Form):
@@ -652,13 +653,7 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
                                 # Обновляем прогресс
                                 cache.set('update_brands_progress', int((idx+1)/total*80))
                     if manual_mappings:
-                        manual_mappings_dict = {
-                            'Victor Reinz': 'REINZ',
-                            'MANN-FILTER': 'Mann',
-                            'Behr-Hella': 'BEHR',
-                            'Autopartner': 'Autopa',
-                        }
-                        all_manual = list(manual_mappings_dict.items())
+                        all_manual = list(BRAND_MAPPING.items())
                         total_manual = len(all_manual)
                         for idx, (old_brand, new_brand) in enumerate(all_manual):
                             count = AutoKontinentProduct.objects.filter(brand__iexact=old_brand).update(brand=new_brand)
@@ -699,54 +694,53 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
         }),
     )
     
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('article', 'brand', 'name')
-        }),
-        ('Остатки', {
-            'fields': ('stock_spb', 'stock_msk')
-        }),
-        ('Цена и единицы', {
-            'fields': ('price', 'multiplicity', 'unit')
-        }),
-        ('Дополнительно', {
-            'fields': ('updated_at',),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    # def has_add_permission(self, request):
-    #     # Запрещаем добавление через админку (только через импорт)
-    #     return False
-
-
-@admin.register(MikadoProduct)
-class MikadoProductAdmin(admin.ModelAdmin):
-    """Административный интерфейс для товаров Mikado"""
+@admin.register(MikadosProduct)
+class MikadosProductAdmin(admin.ModelAdmin):
     list_display = ['article', 'brand', 'name', 'price', 'stock_quantity', 'warehouse', 'updated_at']
     list_filter = ['brand', 'warehouse', 'updated_at']
-    search_fields = ['article', 'brand', 'name', 'producer_number', 'code']
+    search_fields = ['article', 'brand', 'name', 'code']
     readonly_fields = ['updated_at']
     list_per_page = 50
-    list_select_related = []
-    
-    actions = ['clear_all_mikado_products']
-    
-    def clear_all_mikado_products(self, request, queryset):
-        """Очистить все товары Mikado"""
-        count = MikadoProduct.objects.all().delete()[0]
-        self.message_user(request, f'Удалено {count} товаров Mikado')
-    clear_all_mikado_products.short_description = 'Очистить все товары Mikado'
-    
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('article', 'brand', 'name', 'producer_number', 'code')
-        }),
-        ('Цена и склад', {
-            'fields': ('price', 'stock_quantity', 'warehouse', 'multiplicity', 'unit')
-        }),
-        ('Дополнительно', {
-            'fields': ('commentary', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
+    actions = ['normalize_brands']
+
+    def normalize_brands(self, request, queryset):
+        total_updated = 0
+        for old_brand, new_brand in BRAND_MAPPING.items():
+            # Получаем товары для нормализации
+            products_to_update = MikadosProduct.objects.filter(brand=old_brand)
+            updated_count = 0
+            
+            for product in products_to_update:
+                try:
+                    # Проверяем, существует ли уже товар с таким артикулом и новым брендом
+                    existing_product = MikadosProduct.objects.filter(
+                        brand=new_brand, 
+                        article=product.article
+                    ).first()
+                    
+                    if existing_product:
+                        # Если существует, удаляем текущий товар (дубликат)
+                        product.delete()
+                    else:
+                        # Если не существует, обновляем бренд
+                        product.brand = new_brand
+                        product.save()
+                        updated_count += 1
+                        
+                except Exception as e:
+                    # Если ошибка, просто пропускаем
+                    continue
+            
+            total_updated += updated_count
+            
+        if total_updated > 0:
+            if request:
+                self.message_user(request, f'Нормализовано {total_updated} брендов.')
+            else:
+                print(f'Нормализовано {total_updated} брендов.')
+        else:
+            if request:
+                self.message_user(request, 'Нет брендов для нормализации.')
+            else:
+                print('Нет брендов для нормализации.')
+    normalize_brands.short_description = 'Нормализовать бренды'

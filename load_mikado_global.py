@@ -13,7 +13,7 @@ from decimal import Decimal
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shopapex_project.settings')
 django.setup()
 
-from catalog.models import MikadoProduct
+from catalog.models import MikadosProduct
 
 def parse_quantity(qty_val) -> int:
     """Глобальное правило для обработки количества товара"""
@@ -74,7 +74,7 @@ def load_mikado_brand(brand_name, limit=5):
                 multiplicity = 1
             
             # Создаем товар
-            MikadoProduct.objects.create(
+            MikadosProduct.objects.create(
                 brand=brand,
                 article=article,
                 name=name,

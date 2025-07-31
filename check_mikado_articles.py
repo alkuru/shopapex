@@ -127,7 +127,7 @@ def check_articles():
         print("-- Пример SQL для обновления артикулов и брендов:")
         for mismatch in stats['mismatches'][:5]:
             if mismatch['orig_article'] != 'НЕ НАЙДЕН':
-                print(f"UPDATE catalog_mikadoproduct " + \
+                print(f"UPDATE catalog_mikadosproduct " + \
                       f"SET article = '{mismatch['orig_article']}', " + \
                       f"brand = '{mismatch['orig_brand']}' " + \
                       f"WHERE article = '{mismatch['db_article']}' AND " + \
