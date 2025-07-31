@@ -534,6 +534,7 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
     list_filter = ['brand', 'updated_at']
     search_fields = ['article', 'brand', 'name']
     readonly_fields = ['updated_at']
+    actions = ['normalize_brands']
     
     def get_urls(self):
         urls = super().get_urls()
@@ -542,6 +543,7 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
             path('upload-price-progress/', self.admin_site.admin_view(self.upload_price_progress_view), name='catalog_autokontinentproduct_upload_price_progress'),
             path('update-brands/', self.admin_site.admin_view(self.update_brands_view), name='catalog_autokontinentproduct_update_brands'),
             path('update-brands-progress/', self.admin_site.admin_view(self.update_brands_progress_view), name='catalog_autokontinentproduct_update_brands_progress'),
+            path('clear-all/', self.admin_site.admin_view(self.clear_all_view), name='catalog_autokontinentproduct_clear_all'),
         ]
         return custom_urls + urls
     
@@ -707,6 +709,68 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
         from django.template.response import TemplateResponse
         return TemplateResponse(request, 'admin/catalog/autokontinentproduct/update_brands.html', context)
     
+    def clear_all_view(self, request):
+        """Представление для очистки всей базы товаров AutoKontinent"""
+        if request.method == 'POST':
+            try:
+                deleted_count = AutoKontinentProduct.objects.count()
+                AutoKontinentProduct.objects.all().delete()
+                messages.success(request, f'Удалено {deleted_count} товаров AutoKontinent из базы данных')
+                return redirect('admin:catalog_autokontinentproduct_changelist')
+            except Exception as e:
+                messages.error(request, f'Ошибка при очистке базы: {str(e)}')
+                return redirect('admin:catalog_autokontinentproduct_changelist')
+        else:
+            # Показываем страницу подтверждения
+            context = {
+                'title': 'Очистка базы товаров AutoKontinent',
+                'opts': self.model._meta,
+                'subtitle': '',
+                'is_nav_sidebar_enabled': False,
+                'is_popup': False,
+                'has_permission': True,
+                'site_url': '/admin/',
+                'site_title': 'Администрирование Django',
+                'site_header': 'Администрирование Django',
+                'total_products': AutoKontinentProduct.objects.count(),
+            }
+            from django.template.response import TemplateResponse
+            return TemplateResponse(request, 'admin/catalog/autokontinentproduct/clear_all.html', context)
+
+    def normalize_brands(self, request, queryset):
+        """Нормализация брендов для выбранных товаров"""
+        updated_count = 0
+        
+        # Применяем маппинг из brand_mapping.py
+        for old_brand, new_brand in BRAND_MAPPING.items():
+            count = queryset.filter(brand__iexact=old_brand).update(brand=new_brand)
+            updated_count += count
+        
+        # Применяем маппинг из brand_analysis_results.json
+        try:
+            import json
+            import os
+            mapping_file = os.path.join(os.path.dirname(__file__), '..', 'brands_data', 'brand_analysis_results.json')
+            if os.path.exists(mapping_file):
+                with open(mapping_file, 'r', encoding='utf-8') as f:
+                    brand_data = json.load(f)
+                
+                def norm(s):
+                    return str(s).strip().lower().replace(' ', '').replace('-', '').replace('/', '')
+                
+                mapping = {norm(m['autokontinent']): m['autosputnik'] 
+                          for m in brand_data.get('exact_matches', []) 
+                          if m.get('autokontinent') and m.get('autosputnik')}
+                
+                for old_brand, new_brand in mapping.items():
+                    count = queryset.filter(brand__iexact=old_brand).update(brand=new_brand)
+                    updated_count += count
+        except Exception as e:
+            self.message_user(request, f'Ошибка при загрузке brand_analysis_results.json: {str(e)}')
+        
+        self.message_user(request, f'Нормализовано {updated_count} товаров')
+    normalize_brands.short_description = 'Нормализовать бренды'
+
     def changelist_view(self, request, extra_context=None):
         """Добавляем кнопку загрузки прайса"""
         extra_context = extra_context or {}

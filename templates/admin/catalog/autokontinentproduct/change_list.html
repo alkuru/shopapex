@@ -1,18 +1,25 @@
 {% extends "admin/change_list.html" %}
 {% load i18n admin_urls %}
 
-{% block object-tools-items %}
-    {% if show_upload_button %}
-        <li>
-            <a href="{% url 'admin:catalog_autokontinentproduct_upload_price' %}" class="addlink">
-                📊 Загрузить прайс
-            </a>
-        </li>
-        <li>
-            <a href="{% url 'admin:catalog_autokontinentproduct_update_brands' %}" class="addlink">
-                🔄 Обновить бренды
-            </a>
-        </li>
+{% block object-tools %}
+    {% if has_add_permission %}
+        <ul class="object-tools">
+            <li>
+                <a href="{% url 'admin:catalog_autokontinentproduct_upload_price' %}" class="addlink">
+                    Загрузить прайс
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:catalog_autokontinentproduct_clear_all' %}" class="deletelink" 
+                   onclick="return confirm('ВНИМАНИЕ! Это удалит ВСЕ товары AutoKontinent из базы данных. Продолжить?')">
+                    Очистить базу от товаров
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:catalog_autokontinentproduct_add' %}" class="addlink">
+                    {% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}
+                </a>
+            </li>
+        </ul>
     {% endif %}
-    {{ block.super }}
 {% endblock %} 
