@@ -40,6 +40,31 @@ class PriceUploadForm(forms.Form):
         help_text='ВНИМАНИЕ: Это удалит все существующие товары АвтоКонтинента!'
     )
 
+# Форма для загрузки прайса Микадо
+class MikadoPriceUploadForm(forms.Form):
+    excel_file = forms.FileField(
+        label='Excel файл прайса Микадо',
+        help_text='Загрузите Excel файл с прайсом Микадо (.xlsx, .xls)'
+    )
+    brand_filter = forms.CharField(
+        label='Фильтр по бренду',
+        required=False,
+        help_text='Оставьте пустым для загрузки всех брендов, или укажите конкретный бренд'
+    )
+    max_products = forms.IntegerField(
+        label='Максимальное количество товаров',
+        min_value=1,
+        max_value=10000,
+        initial=1000,
+        help_text='Максимальное количество товаров для загрузки'
+    )
+    clear_existing = forms.BooleanField(
+        label='Очистить все существующие товары перед загрузкой',
+        required=False,
+        initial=False,
+        help_text='ВНИМАНИЕ: Это удалит все существующие товары Микадо!'
+    )
+
 # Форма для обновления брендов
 class BrandUpdateForm(forms.Form):
     update_brands = forms.BooleanField(
@@ -702,6 +727,142 @@ class MikadosProductAdmin(admin.ModelAdmin):
     readonly_fields = ['updated_at']
     list_per_page = 50
     actions = ['normalize_brands']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('upload-price/', self.admin_site.admin_view(self.upload_price_view), name='catalog_mikadosproduct_upload_price'),
+            path('upload-price-progress/', self.admin_site.admin_view(self.upload_price_progress_view), name='catalog_mikadosproduct_upload_price_progress'),
+        ]
+        return custom_urls + urls
+
+    def upload_price_progress_view(self, request):
+        """Возвращает текущий прогресс загрузки прайса (0-100)"""
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        progress = cache.get('mikado_upload_price_progress', 0)
+        return JsonResponse({'progress': progress})
+
+    def upload_price_view(self, request):
+        """Представление для загрузки прайса Микадо"""
+        if request.method == 'POST':
+            form = MikadoPriceUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                try:
+                    excel_file = form.cleaned_data['excel_file']
+                    brand_filter = form.cleaned_data['brand_filter'].strip()
+                    max_products = form.cleaned_data['max_products']
+                    clear_existing = form.cleaned_data['clear_existing']
+                    
+                    if clear_existing:
+                        deleted_count = MikadosProduct.objects.count()
+                        MikadosProduct.objects.all().delete()
+                        messages.success(request, f'Удалено {deleted_count} существующих товаров Микадо')
+                    
+                    # Читаем Excel файл
+                    df = pd.read_excel(excel_file)
+                    print(f"📊 Загружено {len(df)} строк из прайса Микадо")
+                    
+                    # Фильтруем по бренду если указан
+                    if brand_filter:
+                        df = df[df['BrandName'].str.contains(brand_filter, case=False, na=False)]
+                        print(f"🔍 Применен фильтр по бренду: {brand_filter}")
+                    
+                    # Ограничиваем количество товаров
+                    if len(df) > max_products:
+                        df = df.head(max_products)
+                        print(f"📦 Ограничено до {max_products} товаров")
+                    
+                    total_rows = len(df)
+                    created_count = 0
+                    skipped_count = 0
+                    
+                    cache.set('mikado_upload_price_progress', 0)
+                    
+                    def parse_quantity(quantity):
+                        """Парсит количество из строки, убирая символы >, <, ="""
+                        if pd.isna(quantity):
+                            return 0
+                        quantity_str = str(quantity).strip()
+                        # Убираем символы >, <, = и берем только цифры
+                        import re
+                        numbers = re.findall(r'\d+', quantity_str)
+                        return int(numbers[0]) if numbers else 0
+                    
+                    # Обрабатываем файл по строкам
+                    for index, row in df.iterrows():
+                        try:
+                            brand = str(row.get('BrandName', '')).strip()
+                            article = str(row.get('Code', '')).strip()
+                            name = str(row.get('Prodname', '')).strip()
+                            price = float(row.get('PriceOut', 0)) if pd.notna(row.get('PriceOut')) else 0
+                            stock_quantity = parse_quantity(row.get('QTY', 0))
+                            multiplicity = int(row.get('BatchQty', 1)) if pd.notna(row.get('BatchQty')) else 1
+                            unit = 'шт'
+                            warehouse = 'ЦС-МК'
+                            code = str(row.get('Code', '')).strip()
+                            
+                            if brand and article and name:
+                                existing_product = MikadosProduct.objects.filter(
+                                    brand=brand,
+                                    article=article
+                                ).first()
+                                
+                                if existing_product:
+                                    skipped_count += 1
+                                else:
+                                    MikadosProduct.objects.create(
+                                        brand=brand,
+                                        article=article,
+                                        name=name,
+                                        price=price,
+                                        stock_quantity=stock_quantity,
+                                        multiplicity=multiplicity,
+                                        unit=unit,
+                                        warehouse=warehouse,
+                                        code=code
+                                    )
+                                    created_count += 1
+                                    
+                        except Exception as e:
+                            messages.warning(request, f'Ошибка в строке {index + 2}: {str(e)}')
+                            continue
+                        
+                        # Обновляем прогресс каждые 50 строк
+                        if index % 50 == 0:
+                            progress = int((index + 1) / total_rows * 100)
+                            cache.set('mikado_upload_price_progress', progress)
+                    
+                    cache.set('mikado_upload_price_progress', 100)
+                    messages.success(request, f'Импорт завершен! Создано: {created_count}, Пропущено (уже существуют): {skipped_count}')
+                    return redirect('admin:catalog_mikadosproduct_changelist')
+                    
+                except Exception as e:
+                    cache.set('mikado_upload_price_progress', 0)
+                    messages.error(request, f'Ошибка при загрузке файла: {str(e)}')
+        else:
+            form = MikadoPriceUploadForm()
+        
+        context = {
+            'title': 'Загрузка прайса Микадо',
+            'form': form,
+            'opts': self.model._meta,
+            'subtitle': '',
+            'is_nav_sidebar_enabled': False,
+            'is_popup': False,
+            'has_permission': True,
+            'site_url': '/admin/',
+            'site_title': 'Администрирование Django',
+            'site_header': 'Администрирование Django',
+        }
+        return TemplateResponse(request, 'admin/catalog/mikadosproduct/upload_price.html', context)
+
+    def changelist_view(self, request, extra_context=None):
+        """Добавляем кнопку загрузки прайса"""
+        extra_context = extra_context or {}
+        extra_context['show_upload_button'] = True
+        return super().changelist_view(request, extra_context)
 
     def normalize_brands(self, request, queryset):
         total_updated = 0
