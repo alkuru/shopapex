@@ -1,0 +1,227 @@
+**Project Documentation: ShopApex**
+
+---
+
+**System Overview**
+ShopApex is a web application for searching auto parts, combining data from two sources:
+
+* **AutoKontinent** — Local PostgreSQL database
+* **AutoSputnik** — External API via FastAPI
+
+---
+
+**System Architecture**
+**1. Docker Containers**
+
+```
+shopapex/
+├── docker-compose.yml          # Container orchestration
+├── Dockerfile                  # Django app image
+├── nginx.conf                  # Nginx config
+└── shopapex/
+    ├── fastapi_test/           # FastAPI service
+    │   └── main.py            # API for AutoSputnik
+    └── shopapex_project/       # Django project
+```
+
+**Containers:**
+
+* `web` (Django + Gunicorn) - port 8000
+* `fastapi` (FastAPI + Uvicorn) - port 8001
+* `nginx` (Reverse proxy) - port 80
+* `db` (PostgreSQL) - port 5432
+* `redis` (cache + Celery broker) - port 6379
+* `celery` (async tasks)
+
+---
+
+**2. Database: PostgreSQL (AutoKontinent)**
+**Main table: AutoKontinentProduct**
+
+* `article`
+* `brand`
+* `name`
+* `price`
+* `stock_spb`
+* `stock_spb_north`
+* `stock_msk`
+
+---
+
+**3. FastAPI Service**
+**Purpose:** Proxy between Django and AutoSputnik API
+
+**Main endpoint:**
+
+```python
+@app.get("/unified_search")
+async def unified_search_endpoint(article: str, brand: str):
+    """
+    Unified search logic:
+    1. Search in AutoKontinent DB
+    2. Search in AutoSputnik API
+    3. Cross-check analogs from AutoSputnik against AutoKontinent
+    """
+```
+
+**Search logic:**
+
+```python
+# 1. Search in AutoKontinent DB
+def search_autokontinent_db(article: str, brand: str):
+    # SQL query that checks all warehouses
+    # Returns one record per available stock location
+
+# 2. Search in AutoSputnik
+def search_autosputnik_api(article: str, brand: str):
+    # Sends HTTP request with requests(timeout=7)
+
+# 3. Cross-check AutoSputnik analogs in AutoKontinent
+for sputnik_item in autosputnik_results:
+    analog_articles.add((analog_article, analog_brand))
+
+for analog_article, analog_brand in analog_articles:
+    analog_results = search_autokontinent_db(...)
+    analog_item["source"] = "autokontinent_analog"
+```
+
+---
+
+**Result Merge Priority**
+
+```python
+# 1. AutoKontinent products
+# 2. AutoKontinent analogs
+# 3. AutoSputnik products
+```
+
+---
+
+**Django Web Interface**
+**1. Product Search (catalog/web\_views.py)**
+
+```python
+def product_search(request):
+    # Get form params
+    # Query FastAPI
+    # Group offers
+    # Render in template
+```
+
+**2. Grouping Logic (catalog/utils\_sputnik.py)**
+
+```python
+def group_offers(items, search_brand=None):
+    # Groups by (article, brand)
+    # Sorts by:
+    # 1. AutoKontinent available
+    # 2. AutoKontinent analog available
+    # 3. AutoKontinent not available
+    # 4. AutoKontinent analog not available
+    # 5. AutoSputnik
+```
+
+**3. HTML Display (templates/catalog/search.html)**
+
+* Show 5 main results, 3 analogs
+* Show each available stock separately
+
+---
+
+**Brand Normalization**
+**1. Brand mapping (catalog/abcp\_api.py)**
+
+```python
+def normalize_brand(brand_name: str) -> str:
+    # Normalizes to AutoSputnik format
+    # e.g., "Mahle" -> "Knecht/Mahle"
+```
+
+**2. Mapping file (brand\_analysis\_results.json)**
+
+```json
+{
+  "Mahle": "Knecht/Mahle",
+  "Mahle kolben": "Knecht/Mahle",
+  "Mann": "MANN-FILTER"
+}
+```
+
+---
+
+**Standalone Tools**
+**1. Price Uploader (price\_uploader\_standalone.py)**
+
+```python
+# GUI app for price uploading
+# Uses Django API
+# Shows progress bar
+```
+
+**2. Async Brand Update (catalog/api\_views.py)**
+
+```python
+@api_view(["POST"])
+def update_brands_api(request):
+    # Updates brand mappings in background using threading
+```
+
+---
+
+**Key Features**
+
+1. **Multi-warehouse inventory**
+
+   * Products shown per warehouse availability
+   * Priority: SPB\_North > SPB > MSK
+
+2. **Cross-database analog lookup**
+
+   * Finds analogs from AutoSputnik
+   * Finds those analogs in AutoKontinent DB
+
+3. **Non-blocking operations**
+
+   * FastAPI proxy
+   * Threaded background tasks
+   * Redis caching for progress
+
+4. **Docker Orchestration**
+
+   * Nginx reverse proxy
+   * PostgreSQL for persistent data
+   * Redis for cache and Celery queues
+
+---
+
+**Tech Stack**
+
+* **Backend**: Django + FastAPI
+* **Database**: PostgreSQL
+* **Cache**: Redis
+* **Web Server**: Nginx + Gunicorn
+* **Containers**: Docker + Docker Compose
+* **Async Tasks**: Celery
+* **External APIs**: requests
+* **GUI**: Tkinter (for desktop uploader)
+
+**IMPORTANT:** This system combines a local AutoKontinent DB with external AutoSputnik API via FastAPI proxy, uses Docker for service isolation, and implements complex analog search logic across sources.
+
+---
+
+**Project Rules: Search Priority**
+
+1. AutoKontinent direct match (available)
+2. AutoKontinent analog (available)
+3. AutoKontinent direct match (not available)
+4. AutoKontinent analog (not available)
+5. AutoSputnik
+
+---
+
+**Grouping Behavior**
+
+* Grouped offers are sorted based on availability and source.
+* Brand names are normalized to AutoSputnik naming via `brand_analysis_results.json`.
+* Redis + Celery used for async and background tasks.
+* Docker orchestration, with FastAPI proxy running on port 8001.

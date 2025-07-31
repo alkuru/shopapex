@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import UploadedFile
 import pandas as pd
 from .models import (
     Brand, WarehouseSettings, ProductCategory, Product, ProductImage, 
-    ProductAnalog, Cart, CartItem, AutoKontinentProduct
+    ProductAnalog, Cart, CartItem, AutoKontinentProduct, MikadoProduct
 )
 from .supplier_models import (
     Supplier, SupplierProduct, SupplierSyncLog, APIMonitorLog, APIHealthCheck,
@@ -718,3 +718,35 @@ class AutoKontinentProductAdmin(admin.ModelAdmin):
     # def has_add_permission(self, request):
     #     # Запрещаем добавление через админку (только через импорт)
     #     return False
+
+
+@admin.register(MikadoProduct)
+class MikadoProductAdmin(admin.ModelAdmin):
+    """Административный интерфейс для товаров Mikado"""
+    list_display = ['article', 'brand', 'name', 'price', 'stock_quantity', 'warehouse', 'updated_at']
+    list_filter = ['brand', 'warehouse', 'updated_at']
+    search_fields = ['article', 'brand', 'name', 'producer_number', 'code']
+    readonly_fields = ['updated_at']
+    list_per_page = 50
+    list_select_related = []
+    
+    actions = ['clear_all_mikado_products']
+    
+    def clear_all_mikado_products(self, request, queryset):
+        """Очистить все товары Mikado"""
+        count = MikadoProduct.objects.all().delete()[0]
+        self.message_user(request, f'Удалено {count} товаров Mikado')
+    clear_all_mikado_products.short_description = 'Очистить все товары Mikado'
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('article', 'brand', 'name', 'producer_number', 'code')
+        }),
+        ('Цена и склад', {
+            'fields': ('price', 'stock_quantity', 'warehouse', 'multiplicity', 'unit')
+        }),
+        ('Дополнительно', {
+            'fields': ('commentary', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

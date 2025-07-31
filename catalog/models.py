@@ -260,3 +260,36 @@ class AutoKontinentProduct(models.Model):
 
     def __str__(self):
         return f"{self.brand} {self.article} {self.name}"
+
+
+class MikadoProduct(models.Model):
+    """Товары из прайса Mikado"""
+    producer_number = models.CharField(max_length=100, verbose_name='Номер производителя')
+    code = models.CharField(max_length=100, verbose_name='Внутренний код')
+    brand = models.CharField(max_length=100, verbose_name='Бренд')
+    article = models.CharField(max_length=100, verbose_name='Артикул')
+    name = models.CharField(max_length=300, verbose_name='Наименование товара')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена')
+    stock_quantity = models.PositiveIntegerField(default=0, verbose_name='Количество на складе')
+    multiplicity = models.PositiveIntegerField(default=1, verbose_name='Кратность поставки')
+    commentary = models.TextField(blank=True, verbose_name='Комментарий')
+    unit = models.CharField(max_length=20, default='шт', verbose_name='Ед. изм.')
+    warehouse = models.CharField(max_length=100, default='ЦС-МК', verbose_name='Склад')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    class Meta:
+        verbose_name = 'Товар Mikado'
+        verbose_name_plural = 'Товары Mikado'
+        indexes = [
+            models.Index(fields=['article']),
+            models.Index(fields=['brand']),
+            models.Index(fields=['code']),
+            models.Index(fields=['producer_number']),
+            models.Index(fields=['article', 'brand']),  # Составной индекс для поиска
+            models.Index(fields=['updated_at']),  # Для сортировки
+            models.Index(fields=['stock_quantity']),  # Для фильтрации по наличию
+        ]
+        unique_together = ['brand', 'article']
+
+    def __str__(self):
+        return f"{self.brand} {self.article} {self.name}"

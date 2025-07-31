@@ -47,4 +47,8 @@ urlpatterns = [
     # API endpoints для обновления брендов
     path('update-brands/', api_views.update_brands_api, name='update_brands_api'),
     path('update-brands-progress/', api_views.update_brands_progress_api, name='update_brands_progress_api'),
+    
+    # API endpoints для работы с Mikado
+    path('api/clear_mikado_products/', api_views.clear_mikado_products, name='clear_mikado_products'),
+    path('api/bulk_create_mikado_products/', api_views.bulk_create_mikado_products, name='bulk_create_mikado_products'),
 ]

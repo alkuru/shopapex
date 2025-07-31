@@ -1,0 +1,23 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"status":"ok","data":[{"article":"4502101","brand":"LEMFORDER","price":7202,"availability":45,"description":"ÐÐµÑÐ°Ð»Ñ","
+                    delivery_time":"21 Ð´Ð½ÐµÐ¹","warehouse":"ÑÑÐ¾ÑÐ¾Ð½Ð½Ð¸Ð¹","unit":"ÑÑ....
+RawContent        : HTTP/1.1 200 OK
+                    Content-Length: 12953
+                    Content-Type: application/json
+                    Date: Wed, 30 Jul 2025 21:02:41 GMT
+                    Server: uvicorn
+                    
+                    {"status":"ok","data":[{"article":"4502101","brand":"LEMFORDER","price":...
+Forms             : {}
+Headers           : {[Content-Length, 12953], [Content-Type, application/json], [Date, Wed, 30 Jul 2025 21:02:41 GMT], [Server, uvicorn]}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 12953
+
+
+

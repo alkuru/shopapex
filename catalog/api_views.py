@@ -9,6 +9,8 @@ import os
 import threading
 import time
 from .models import AutoKontinentProduct
+from .models import MikadoProduct
+from django.conf import settings
 
 
 @api_view(['POST'])
@@ -233,3 +235,92 @@ def process_brand_update():
         cache.set('update_brands_progress', 0)
         print(f"Ошибка обновления брендов: {str(e)}")
         raise e 
+
+
+@api_view(['POST'])
+def clear_mikado_products(request):
+    """API для очистки всех товаров Mikado"""
+    try:
+        deleted_count = MikadoProduct.objects.all().delete()[0]
+        return Response({
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'Удалено {deleted_count} товаров Mikado'
+        })
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@api_view(['POST'])
+def bulk_create_mikado_products(request):
+    """API для массового создания товаров Mikado"""
+    try:
+        products_data = request.data.get('products', [])
+        normalize_brands = request.data.get('normalize_brands', True)
+        
+        if not products_data:
+            return Response({'error': 'Нет данных для загрузки'}, status=400)
+        
+        # Загрузка маппинга брендов для нормализации
+        brand_mapping = {}
+        if normalize_brands:
+            try:
+                import json
+                import os
+                mapping_file = os.path.join(settings.BASE_DIR, 'brand_analysis_results.json')
+                if os.path.exists(mapping_file):
+                    with open(mapping_file, 'r', encoding='utf-8') as f:
+                        brand_mapping = json.load(f)
+            except Exception as e:
+                print(f"Ошибка загрузки brand_mapping: {e}")
+        
+        created_count = 0
+        updated_count = 0
+        
+        for product_data in products_data:
+            try:
+                # Нормализация бренда
+                original_brand = product_data.get('brand', '')
+                normalized_brand = brand_mapping.get(original_brand, original_brand)
+                
+                # Создание или обновление товара
+                mikado_product, created = MikadoProduct.objects.update_or_create(
+                    brand=normalized_brand,
+                    article=product_data.get('article', ''),
+                    defaults={
+                        'producer_number': product_data.get('producer_number', ''),
+                        'code': product_data.get('code', ''),
+                        'name': product_data.get('name', ''),
+                        'price': product_data.get('price', 0),
+                        'stock_quantity': product_data.get('stock_quantity', 0),
+                        'multiplicity': product_data.get('multiplicity', 1),
+                        'commentary': product_data.get('commentary', ''),
+                        'unit': product_data.get('unit', 'шт'),
+                        'warehouse': 'ЦС-МК',
+                    }
+                )
+                
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+                    
+            except Exception as e:
+                print(f"Ошибка при создании товара {product_data.get('article', '')}: {e}")
+                continue
+        
+        return Response({
+            'success': True,
+            'created_count': created_count,
+            'updated_count': updated_count,
+            'total_processed': len(products_data)
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=500) 

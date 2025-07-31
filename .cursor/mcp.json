@@ -1,0 +1,9 @@
+{
+  "servers": [
+    {
+      "id": "browserbase",
+      "url": "https://mcp.browserbase.com",
+      "tools": ["browser"]
+    }
+  ]
+}

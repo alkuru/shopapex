@@ -119,6 +119,9 @@ def product_search(request):
             return 'ЦС АКМСК'
         if 'цс ак' in pn:
             return 'ЦС АК'
+        # Для Mikado: склад ЦС-МК
+        if 'цс-мк' in pn or 'цс мк' in pn:
+            return 'ЦС-МК'
         # Для автоспутник: оставить только 'цс воронеж', 'цс краснодар', 'цс ростов'
         if 'цс воронеж' in pn:
             return 'ЦС-ВР'
@@ -131,6 +134,25 @@ def product_search(request):
         if 'транз' in pn:
             return 'Транзит'
         return pn or ''
+    
+    def parse_quantity(qty_val) -> int:
+        """Глобальное правило для обработки количества товара"""
+        try:
+            if pd.isna(qty_val):
+                return 0
+            elif isinstance(qty_val, str):
+                qty_str = str(qty_val).strip().lower()
+                if '>' in qty_str:
+                    # Если '>4', берем 5
+                    return 5
+                elif qty_str in ['nan', 'none', '']:
+                    return 0
+                else:
+                    return int(float(qty_str))
+            else:
+                return int(float(qty_val))
+        except:
+            return 0
     
     from catalog.brand_country_map import brand_country_iso
     from catalog.sputnik_api import get_sputnik_brands_full
@@ -182,7 +204,19 @@ def product_search(request):
                         if source == 'autokontinent_db':
                             supplier = 'АвтоКонтинент'
                             price_label_val = price_label(item.get('warehouse', ''))
-                            is_analog = False  # АвтоКонтинент не имеет аналогов в базе
+                            is_analog = False
+                        elif source == 'autokontinent_analog':
+                            supplier = 'АвтоКонтинент'
+                            price_label_val = price_label(item.get('warehouse', ''))
+                            is_analog = True
+                        elif source == 'mikado_db':
+                            supplier = 'Mikado'
+                            price_label_val = price_label(item.get('warehouse', ''))
+                            is_analog = False
+                        elif source == 'mikado_analog':
+                            supplier = 'Mikado'
+                            price_label_val = price_label(item.get('warehouse', ''))
+                            is_analog = True
                         else:
                             supplier = 'Авто-Спутник'
                             price_label_val = price_label(item.get('warehouse', ''))
@@ -247,11 +281,21 @@ def product_search(request):
         original_groups = group_offers(products, search_brand=brand)
         query_art = request.GET.get("q", "") or query
         query_brand = request.GET.get("brand", "") or brand
+        
         def is_main_group(g):
+            # Нормализуем искомый бренд для сравнения
+            search_brand_normalized = (query_brand or "").lower()
+            if search_brand_normalized in ['fiat/alfa/lancia', 'fiat']:
+                search_brand_normalized = 'fiat'
+            elif search_brand_normalized in ['hyundai/kia', 'hyundai', 'kia']:
+                search_brand_normalized = 'hyundai'
+            elif search_brand_normalized == 'kia hyundai':
+                search_brand_normalized = 'kia hyundai'
+            
             return (
                 g["articul"] and g["brand"] and
                 g["articul"].lower() == (query_art or "").lower() and
-                g["brand"].lower() == (query_brand or "").lower()
+                g["brand"].lower() == search_brand_normalized
             )
         
         def has_autokontinent_items(g):
@@ -270,22 +314,24 @@ def product_search(request):
             return False
         
         def sort_groups(groups):
-            # Сортируем группы по приоритету:
-            # 1. Группы с товарами AutoKontinent в наличии
-            # 2. Группы с товарами AutoKontinent (не в наличии)
-            # 3. Остальные группы (AutoSputnik и др.)
+            # ГЛОБАЛЬНОЕ ПРАВИЛО: Сортируем группы по приоритету:
+            # 1. Группы с товарами В НАЛИЧИИ (любой источник)
+            # 2. Группы с товарами НЕ В НАЛИЧИИ по источнику
             
-            autokontinent_in_stock_groups = []
-            autokontinent_other_groups = []
-            other_groups = []
+            in_stock_groups = []
+            not_in_stock_groups = []
             
             for g in groups:
-                if has_autokontinent_in_stock(g):
-                    autokontinent_in_stock_groups.append(g)
-                elif has_autokontinent_items(g):
-                    autokontinent_other_groups.append(g)
+                has_in_stock = False
+                for item in g.get('visible', []) + g.get('hidden', []):
+                    if item.get('availability', 0) > 0:
+                        has_in_stock = True
+                        break
+                
+                if has_in_stock:
+                    in_stock_groups.append(g)
                 else:
-                    other_groups.append(g)
+                    not_in_stock_groups.append(g)
             
             # Внутри каждой категории сортируем по главным группам
             def sort_within_category(groups_list):
@@ -293,9 +339,8 @@ def product_search(request):
             
             # Возвращаем группы в порядке приоритета
             result = []
-            result.extend(sort_within_category(autokontinent_in_stock_groups))
-            result.extend(sort_within_category(autokontinent_other_groups))
-            result.extend(sort_within_category(other_groups))
+            result.extend(sort_within_category(in_stock_groups))
+            result.extend(sort_within_category(not_in_stock_groups))
             
             return result
         groups = sort_groups(original_groups)
